@@ -383,7 +383,8 @@
       const dataset=await api.addHistoricalDataset({name:$('#history-name').value.trim()||p.fileName,dataset_type:'soil_reference',description:'Historical soil / pXRF reference dataset',raw_file_id:raw.id,parser_version:HISTORICAL_PARSER_VERSION,metadata:{source_file:p.fileName,source_sha256:p.fileHash,record_count:p.parsed.recordCount,observation_count:p.parsed.observationCount,elements:p.parsed.elements,units:p.parsed.units,locations:[...new Set(p.parsed.records.map(r=>r.location).filter(Boolean))].slice(0,500),warnings:p.parsed.warnings}});
       btn.textContent='Storing records…';
       const recordRows=p.parsed.records.map(r=>({dataset_id:dataset.id,source_row_no:r.sourceRowNo,original_index:r.originalIndex,location:r.location,original_time:r.originalTime,measured_at_local:r.measuredAtLocal,time_ambiguous:r.timeAmbiguous,original_sample:r.originalSample,material_type:r.materialType,duration_s:r.durationS,units:r.units,sigma_value:r.sigmaValue,sequence:r.sequence,res:r.res,escale:r.eScale,shape_time:r.shapeTime,inspector:r.inspector,cor_1:r.cor1,cor_2:r.cor2,misc:r.misc,note:r.note,flags:r.flags,raw:r.raw}));
-      const stored=await api.addHistoricalRecords(recordRows);
+      const stored=[];
+      for(let i=0;i<recordRows.length;i+=250)stored.push(...await api.addHistoricalRecords(recordRows.slice(i,i+250)));
       const idByRow=new Map(stored.map(r=>[r.source_row_no,r.id]));
       const obs=[];
       p.parsed.records.forEach(r=>r.observations.forEach(o=>{const recordId=idByRow.get(r.sourceRowNo);if(recordId)obs.push({record_id:recordId,analyte:o.analyte,raw_value:o.raw_value,value:o.value,qualifier:o.qualifier,detection_limit:o.detection_limit,raw_error:o.raw_error,error:o.error,unit:o.unit});}));
