@@ -112,7 +112,7 @@
         analyses: must(analyses) || [],
         events: must(events) || [],
         measurements: must(measurements) || [],
-        treatments: must(treatments) || []
+        treatments: (treatments?.error && (treatments.error.code==='PGRST205' || treatments.error.code==='42P01')) ? [] : (must(treatments) || [])
       };
     },
     async events() {
@@ -415,14 +415,19 @@
       if(!window.XLSX)throw new Error('The spreadsheet reader did not load. Reload the page and try again.');
       const buf=await file.arrayBuffer();
       const wb=window.XLSX.read(buf,{type:'array',cellDates:true});
-      const sheetName=wb.SheetNames[0];
-      if(!sheetName)throw new Error('No worksheet found.');
-      const ws=wb.Sheets[sheetName];
-      const csv=window.XLSX.utils.sheet_to_csv(ws,{blankrows:true});
-      const parsed=Vanta.parseHistoricalSoil(csv);
-      parsed.workbookSheet=sheetName;
-      parsed.sourceFormat='xlsx';
-      return parsed;
+      if(!wb.SheetNames.length)throw new Error('No worksheet found.');
+      let lastError=null;
+      for(const sheetName of wb.SheetNames){
+        try{
+          const ws=wb.Sheets[sheetName],csv=window.XLSX.utils.sheet_to_csv(ws,{blankrows:true});
+          const parsed=Vanta.parseHistoricalSoil(csv);
+          parsed.workbookSheet=sheetName;
+          parsed.sourceFormat='xlsx';
+          parsed.workbookSheets=wb.SheetNames;
+          return parsed;
+        }catch(e){lastError=e;}
+      }
+      throw lastError||new Error('No worksheet contained a recognisable historical soil dataset.');
     }
     const parsed=Vanta.parseHistoricalSoil(await file.text());
     parsed.sourceFormat='csv';
