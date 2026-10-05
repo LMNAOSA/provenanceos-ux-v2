@@ -27,6 +27,32 @@ create table if not exists public.sample_treatments (
 create index if not exists sample_treatments_sample_idx
   on public.sample_treatments(sample_id, created_at desc);
 
+create or replace function public.log_treatment_added()
+returns trigger language plpgsql security definer set search_path=''
+as $
+begin
+  insert into public.sample_events(sample_id,kind,detail)
+  values (
+    new.sample_id,
+    'treated',
+    jsonb_build_object(
+      'status', new.treatment_status,
+      'method', new.treatment_method,
+      'reagent', new.reagent_name,
+      'concentration_pct', new.reagent_concentration_pct,
+      'duration_min', new.treatment_duration_min,
+      'cycle_count', new.cycle_count
+    )
+  );
+  return new;
+end $;
+
+revoke all on function public.log_treatment_added() from public, anon, authenticated;
+drop trigger if exists treatments_logged on public.sample_treatments;
+create trigger treatments_logged
+  after insert on public.sample_treatments
+  for each row execute function public.log_treatment_added();
+
 alter table public.sample_treatments enable row level security;
 
 drop policy if exists "staff read treatments" on public.sample_treatments;
