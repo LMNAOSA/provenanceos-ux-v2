@@ -1,66 +1,50 @@
 # ProvenanceOS UX V2 — Australian Provenance Project
 
-Restrained dark/glass UI for registering opal specimens, photographing them, and attaching pXRF (Vanta) readings.
-Data is stored in Supabase: samples and readings in Postgres, photos in a private Storage bucket.
+A field-first specimen registry for Andamooka material, pXRF evidence and visual capture.
 
-No build step. Plain HTML/CSS/JS plus `@supabase/supabase-js` from a pinned, integrity-checked CDN link.
+## Field workflow
 
-## First-time setup (about five minutes)
+**Register once.** Choose AHM — Andamooka Hard Matrix, ACC — Andamooka Coloured Concrete, ACX — Andamooka Crystal Opal, or OTH — Unknown / Other. The database assigns the next class-specific number, so the user never types an ID.
 
-1. **Create your login.** Supabase dashboard → *Authentication → Users → Add user*. Enter an email and password and tick **Auto Confirm User**.
-2. **Create the tables.** *SQL Editor → New query*, paste all of [`supabase/schema.sql`](supabase/schema.sql), press **Run**. It's safe to run again.
-3. **Close the front door.** *Authentication → Sign In / Providers → turn off "Allow new users to sign up".* (Even if left on, strangers can't read or write anything — only people on the `staff` list can — but there's no reason to let them create accounts.)
+**Capture evidence.** Visible light is the normal specimen record. Fluorescence and phosphorescence are first-class capture modes and can be photographs or video.
 
-Then run the app and sign in:
+**Import Vanta data in batches.** Export a periodic CSV from the Vanta. ProvenanceOS hashes and preserves the original CSV, parses the readings, and attaches every row carrying an exact specimen ID. There is no one-reading-at-a-time workflow.
+
+**Review exceptions.** A missing, unknown or conflicting specimen ID is not guessed. The source row is retained as an unmatched record for human review.
+
+**Measure carefully.** The camera can produce a 2D length estimate only when a known reference is visible in the same plane. It is explicitly labelled as a derived estimate, not laboratory metrology and not a guessed thickness.
+
+**Create presentation cutouts.** Background removal uses on-device interactive segmentation. The original photograph remains untouched; the cutout is stored as derived media with a processing method and link to the source.
+
+## Scientific defensibility
+
+- Original Vanta CSV files are stored in a private bucket and hashed with SHA-256.
+- The exact parsed Vanta row is retained in analyses.raw.
+- Exact specimen-ID matching is recorded as the match method with full confidence; non-exact rows are not silently attached.
+- Units that were absent from the export are stored as UNVERIFIED rather than silently treated as ppm.
+- <LOD, ND and related values remain below-detection flags and are never converted to zero by the application.
+- Original media are immutable evidence; thumbnails and masks are derivatives.
+- Derived camera measurements retain reference pixels, specimen pixels and source image ID.
+- IDs are unique and concurrency-safe but intentionally not gap-free.
+
+## Vanta setup
+
+Configure the Vanta export/Auto Export so the sample identifier is written into the export row, preferably through the Vanta Notes/Sample field. The exact specimen ID is the authoritative link between the instrument result and the physical specimen.
+
+## Run
+
+Serve the static site over HTTPS or localhost:
 
     python3 -m http.server 8787
 
-Open http://127.0.0.1:8787. Until step 2 is done the app shows a "Database not set up yet" screen instead of the sign-in form.
+Open http://127.0.0.1:8787.
 
-## Adding a colleague
+## Supabase
 
-Create them under *Authentication → Users*, then run this once in the SQL editor:
-
-    insert into public.staff (user_id) select id from auth.users where email = 'them@example.com';
-
-(Re-running the last statement of `schema.sql` authorises everyone currently listed under Users.)
-
-## What is stored
-
-| Table / bucket | Holds |
-| --- | --- |
-| `samples` | One row per specimen. IDs `AND-000001…` are assigned by the database, so two phones can't collide. |
-| `sample_images` + bucket `sample-images` | Original photo, a small thumbnail, and the original's SHA-256. The bucket is private; the app uses short-lived signed links. |
-| `analyses` | One row per Vanta reading: parsed element values (`results`) and the untouched CSV row (`raw`). |
-| `sample_events` | History ("Registered", "Photo added", "pXRF attached"), written by database triggers — the browser can't write it. |
-| `staff` | Who is allowed in. |
-
-It is deliberately **append-only**: the app can add and read, but not edit or delete. Mistakes are corrected by adding, not rewriting. Say if you want an edit/void workflow.
-
-Sample IDs are unique and ascending but **not gap-free** — a failed save can use up a number (normal for database sequences).
-
-## Importing Vanta data
-
-*Samples → (a sample) → Attach pXRF* attaches a CSV to that sample. *Analysis → Import Vanta CSV* does a bulk import and matches each reading to a sample by an ID written in its row (e.g. `AND-000012` in the Sample / Notes column).
-
-- Re-importing the same file, or an export that overlaps an earlier one, never duplicates readings.
-- `<LOD`, `ND` etc. are stored as "below detection" (value empty, flag set) — never silently turned into 0.
-- Units come from the file when it has them; otherwise values are stored as **ppm** and the import screen says so.
-- Dates are read day/month/year unless the numbers force otherwise.
-- The parser ([`vanta.js`](vanta.js)) is tolerant of the header styles Vanta/Olympus exports use, but it was written without a real export to hand. **If an import looks wrong, send me the CSV** and I'll tune it and add it to the tests.
+Run supabase/schema.sql in the Supabase SQL editor. The browser uses only the publishable key in config.js; never put a service-role or secret key in the repository.
 
 ## Tests
 
-    node --test tests/vanta.test.js     # CSV parser
+    node --test tests/vanta.test.js
 
-## Deploying
-
-Any static host works (Netlify, Vercel, Cloudflare Pages, GitHub Pages). It must be served over **https** — the phone camera and secure hashing don't work on plain http (localhost is fine).
-
-`config.js` holds the project URL and the **publishable** key, which is designed to be public. Never put a `sb_secret_…` / `service_role` key in this project.
-
-## Not built yet
-
-- **Offline queue.** Registering needs a connection. If the field has no signal the form keeps what you typed and shows an error, but doesn't save for later.
-- Samples created in the old localStorage prototype were not migrated (they only had demo data and no photos).
-- Search/filter on the Samples list (it loads the latest 500).
+The next important fixture is the first real Vanta export from the instrument that will run in the field. Add it to the parser tests before treating the export template as permanently locked.
