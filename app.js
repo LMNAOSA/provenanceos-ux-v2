@@ -313,7 +313,7 @@
       '<div class="method-kicker">AUSTRALIAN PROVENANCE PROJECT</div>'+
       '<h2>ProvenanceOS™</h2><p class="method-lead">A field-first specimen registry for Andamooka material, pXRF evidence and visual capture.</p>'+
       '<h3>Field workflow</h3>'+
-      '<p><b>Register once.</b><br>Choose from AHM — Andamooka Hard Matrix, ACC — Andamooka Coloured Concrete, ACX — Andamooka Crystal Opal, or OTH — Unknown / Other. The database assigns the next class-specific number, so you'll never type an ID.</p>'+
+      '<p><b>Register once.</b><br>Choose from AHM — Andamooka Hard Matrix, ACC — Andamooka Coloured Concrete, ACX — Andamooka Crystal Opal, or OTH — Unknown / Other. The database assigns the next class-specific number, so you will never type an ID.</p>'+
       '<p><b>Capture evidence.</b> Visible light is the normal specimen record. Fluorescence and phosphorescence are first-class capture modes and can be photographs or video.</p>'+
       '<p><b>Import Vanta data in batches.</b> Export a periodic CSV from the Vanta. ProvenanceOS™ hashes and preserves the original CSV, parses the readings, and attaches every row carrying an exact specimen ID, not a horrible one-reading-at-a-time workflow.</p>'+
       '<p><b>Review exceptions.</b> A missing, unknown or conflicting specimen ID is not guessed. The source row is retained as an unmatched record for human review.</p>'+
