@@ -255,5 +255,177 @@
     };
   }
 
-  return { parse, parseCSV, classifyHeader, parseDateTime, sortElements, ELEMENT_ORDER };
+
+  function parseHistoricalSoil(input) {
+    const text = String(input ?? '').replace(/^﻿/, '');
+    const delimiter = detectDelimiter(text);
+    const decimalComma = delimiter === ';';
+    const rows = parseCSV(text, delimiter);
+    let headerIdx = -1;
+    for (let r = 0; r < Math.min(rows.length, 100); r++) {
+      const h = rows[r].map(x => String(x ?? '').trim());
+      const names = new Set(h.map(metaKey));
+      const elementHeaders = h.reduce((n, cell) => n + (classifyHeader(cell) ? 1 : 0), 0);
+      if (names.has('location') && (names.has('time') || names.has('date time')) && names.has('sample') && elementHeaders >= 5) {
+        headerIdx = r;
+        break;
+      }
+    }
+    if (headerIdx === -1) throw new Error('No historical soil export header found. Expected LOCATION, Time, SAMPLE and paired element/error columns.');
+
+    const headers = rows[headerIdx].map(h => String(h ?? '').replace(/^﻿/, '').trim());
+    const find = name => {
+      const target = metaKey(name);
+      const i = headers.findIndex(h => metaKey(h) === target);
+      return i === -1 ? null : i;
+    };
+    const locationIdx = find('location');
+    const timeIdx = find('time');
+    const dateTimeIdx = find('date time');
+    const typeIdx = find('type');
+    const durationIdx = find('duration');
+    const unitsIdx = find('units');
+    const sigmaIdx = find('sigma value');
+    const sequenceIdx = find('sequence');
+    const resIdx = find('res');
+    const eScaleIdx = find('escale');
+    const shapeTimeIdx = find('shape time');
+    const sampleIdx = find('sample');
+    const indexIdx = find('index');
+    const inspectorIdx = find('inspector');
+    const cor1Idx = find('cor 1');
+    const cor2Idx = find('cor 2');
+    const miscIdx = find('misc');
+    const noteIdx = find('note');
+    const flagsIdx = find('flags');
+
+    const cols = [];
+    const seen = new Set();
+    headers.forEach((h, idx) => {
+      const c = classifyHeader(h);
+      if (!c || c.kind !== 'value' || seen.has(c.el)) return;
+      seen.add(c.el);
+      const err = headers.findIndex((x, i) => i !== idx && classifyHeader(x)?.kind === 'error' && classifyHeader(x)?.el === c.el);
+      cols.push({ el:c.el, valueIdx:idx, errorIdx:err === -1 ? null : err, unit:c.unit || null });
+    });
+
+    const rawKeys = [];
+    const used = new Map();
+    headers.forEach((h, i) => {
+      const base = h || `column ${i + 1}`;
+      const n = (used.get(base) || 0) + 1;
+      used.set(base, n);
+      rawKeys.push(n === 1 ? base : `${base} (${n})`);
+    });
+
+    const warnings = [];
+    let ambiguousDates = 0, invalidCells = 0, skippedRows = 0, duplicateHeaders = 0;
+    const records = [];
+
+    const textAt = (cells, idx) => idx == null ? null : (String(cells[idx] ?? '').trim() || null);
+    const numAt = (cells, idx) => {
+      const raw = textAt(cells, idx);
+      if (!raw) return null;
+      const n = toNumber(raw, decimalComma);
+      return Number.isFinite(n) ? n : null;
+    };
+    const headerRowFingerprint = headers.map(metaKey).join('|');
+
+    for (let r = headerIdx + 1; r < rows.length; r++) {
+      const cells = rows[r];
+      if (!cells.some(c => String(c).trim() !== '')) continue;
+      const fingerprint = cells.map(metaKey).join('|');
+      if (fingerprint === headerRowFingerprint || metaKey(cells[locationIdx]) === 'location') {
+        duplicateHeaders++;
+        continue;
+      }
+
+      const location = textAt(cells, locationIdx);
+      const originalIndex = textAt(cells, indexIdx);
+      const originalSample = textAt(cells, sampleIdx);
+      if (!location && !originalIndex && !originalSample) {
+        skippedRows++;
+        continue;
+      }
+
+      const results = [];
+      for (const col of cols) {
+        const rawValue = textAt(cells, col.valueIdx);
+        if (!rawValue) continue;
+        const v = parseValue(rawValue, decimalComma);
+        if (v.invalid) { invalidCells++; continue; }
+        const entry = {
+          analyte: col.el,
+          raw_value: rawValue,
+          value: v.lod ? null : (v.value ?? null),
+          qualifier: v.lod ? 'below_lod' : null,
+          detection_limit: v.limit ?? null,
+          unit: textAt(cells, unitsIdx) || col.unit || null,
+          raw_error: textAt(cells, col.errorIdx)
+        };
+        if (col.errorIdx != null) {
+          const e = parseValue(textAt(cells, col.errorIdx) || '', decimalComma);
+          entry.error = e.value !== undefined ? e.value : null;
+        } else entry.error = null;
+        results.push(entry);
+      }
+      if (!results.length) { skippedRows++; continue; }
+
+      let when = null, timeAmbiguous = false;
+      const rawTime = textAt(cells, timeIdx) || textAt(cells, dateTimeIdx);
+      if (rawTime) {
+        when = parseDateTime(rawTime);
+        timeAmbiguous = !!when?.ambiguous;
+        if (timeAmbiguous) ambiguousDates++;
+      }
+
+      const raw = {};
+      rawKeys.forEach((k, i) => { raw[k] = cells[i] == null ? '' : String(cells[i]).trim(); });
+      records.push({
+        sourceRowNo: r + 1,
+        originalIndex,
+        location,
+        originalTime: rawTime,
+        measuredAtLocal: when ? when.iso.slice(0, 19).replace('T', ' ') : null,
+        timeAmbiguous,
+        originalSample,
+        materialType: textAt(cells, typeIdx),
+        durationS: numAt(cells, durationIdx),
+        units: textAt(cells, unitsIdx),
+        sigmaValue: numAt(cells, sigmaIdx),
+        sequence: textAt(cells, sequenceIdx),
+        res: numAt(cells, resIdx),
+        eScale: numAt(cells, eScaleIdx),
+        shapeTime: numAt(cells, shapeTimeIdx),
+        inspector: textAt(cells, inspectorIdx),
+        cor1: textAt(cells, cor1Idx),
+        cor2: textAt(cells, cor2Idx),
+        misc: textAt(cells, miscIdx),
+        note: textAt(cells, noteIdx),
+        flags: textAt(cells, flagsIdx),
+        raw,
+        observations: results
+      });
+    }
+
+    if (!records.length) throw new Error('The historical soil file has a valid header but no readable records.');
+    if (ambiguousDates) warnings.push(`${ambiguousDates} date/time value${ambiguousDates === 1 ? '' : 's'} are ambiguous; the original time text is preserved and the parsed value is marked ambiguous.`);
+    if (duplicateHeaders) warnings.push(`${duplicateHeaders} repeated header row${duplicateHeaders === 1 ? '' : 's'} were ignored.`);
+    if (invalidCells) warnings.push(`${invalidCells} elemental value${invalidCells === 1 ? '' : 's'} could not be read and were left in the original row only.`);
+    if (skippedRows) warnings.push(`${skippedRows} non-data row${skippedRows === 1 ? '' : 's'} were ignored.`);
+
+    return {
+      delimiter,
+      headerRowNo: headerIdx + 1,
+      elements: sortElements(cols.map(c => c.el)),
+      units: [...new Set(records.map(r => r.units).filter(Boolean))],
+      warnings,
+      repeatedHeadersIgnored: duplicateHeaders,
+      records,
+      recordCount: records.length,
+      observationCount: records.reduce((n, r) => n + r.observations.length, 0)
+    };
+  }
+
+  return { parse, parseCSV, classifyHeader, parseDateTime, sortElements, parseHistoricalSoil, ELEMENT_ORDER };
 });
