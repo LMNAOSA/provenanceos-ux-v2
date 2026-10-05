@@ -1,0 +1,7 @@
+# Deploy only the app. Keep setup SQL, tests, notes and local tooling out of the public site.
+supabase/
+tests/
+.superdesign/
+.claude/
+README.md
+.gitignore
