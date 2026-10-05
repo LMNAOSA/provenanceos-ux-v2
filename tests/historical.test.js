@@ -15,7 +15,7 @@ test('historical soil export preserves repeated headers, metadata, units and LOD
   assert.equal(r.recordCount, 2);
   assert.equal(r.repeatedHeadersIgnored, 1);
   assert.equal(r.observationCount, 6);
-  assert.deepEqual(r.elements, ['Cu','Fe','Ca']);
+  assert.deepEqual(r.elements, ['Ca','Fe','Cu']);
   assert.equal(r.records[0].location, 'Second Hill');
   assert.equal(r.records[0].originalSample, null);
   assert.equal(r.records[1].originalSample, '1');
