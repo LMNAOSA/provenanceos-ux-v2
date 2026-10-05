@@ -22,6 +22,145 @@
   const app = document.getElementById('app');
   const state = { user:null, detail:null, tab:'Overview', shots:[], stream:null, mediaRecorder:null, recordChunks:[], captureKind:'visible', plan:null, importTarget:null, selectedMeasure:null, segmenter:null, segmenterModule:null, segmenterLoading:false };
 
+  // ── runtime / data layer ──────────────────────────────────────────────────────────────────
+  let sb = null;
+  let navToken = 0;
+  const urlCache = new Map();
+
+  const $ = selector => document.querySelector(selector);
+  const errText = e => e?.message || e?.error_description || String(e || 'Unknown error');
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const fmtNum = value => {
+    const n = Number(value);
+    return Number.isFinite(n) ? new Intl.NumberFormat('en-AU',{maximumFractionDigits:3}).format(n) : '—';
+  };
+  function fmtDate(value) {
+    if (!value) return '—';
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? '—' : new Intl.DateTimeFormat('en-AU',{day:'numeric',month:'short',year:'numeric'}).format(d);
+  }
+  function fmtDateTime(value) {
+    if (!value) return '—';
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? '—' : new Intl.DateTimeFormat('en-AU',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(d);
+  }
+  const plural = (n, word) => Number(n) === 1 ? `1 ${word}` : `${n} ${word}s`;
+
+  function must(result) {
+    if (result?.error) throw result.error;
+    return result?.data;
+  }
+
+  async function sha256(input) {
+    const data = typeof input === 'string' ? new TextEncoder().encode(input) : await input.arrayBuffer();
+    const digest = await crypto.subtle.digest('SHA-256', data);
+    return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  async function signed(paths = []) {
+    const unique = [...new Set(paths.filter(Boolean))];
+    const missing = unique.filter(p => !urlCache.has(p));
+    if (missing.length) {
+      for (let i = 0; i < missing.length; i += 50) {
+        const part = missing.slice(i, i + 50);
+        const data = must(await sb.storage.from(BUCKET).createSignedUrls(part, 3600));
+        (data || []).forEach((row, idx) => {
+          if (row?.signedUrl) urlCache.set(part[idx], row.signedUrl);
+        });
+      }
+    }
+    return path => path ? urlCache.get(path) || null : null;
+  }
+
+  function toast(message, type) {
+    const el = $('#toast');
+    if (!el) return;
+    el.textContent = message || '';
+    el.className = 'toast show' + (type === 'error' ? ' error' : '');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => { el.className = 'toast'; }, 4200);
+  }
+
+  const api = {
+    async overview({limit=500}={}) {
+      return must(await sb.from('sample_overview').select('*').order('created_at',{ascending:false}).limit(limit)) || [];
+    },
+    async counts() {
+      const [samples, images, analyses] = await Promise.all([
+        sb.from('samples').select('id',{count:'exact',head:true}),
+        sb.from('sample_images').select('id',{count:'exact',head:true}),
+        sb.from('analyses').select('id',{count:'exact',head:true})
+      ]);
+      if (samples.error) throw samples.error;
+      if (images.error) throw images.error;
+      if (analyses.error) throw analyses.error;
+      return {samples:samples.count||0,photographed:images.count||0,analysed:analyses.count||0};
+    },
+    async sampleDetail(id) {
+      const [sample,images,analyses,events,measurements] = await Promise.all([
+        sb.from('samples').select('*').eq('id',id).maybeSingle(),
+        sb.from('sample_images').select('*').eq('sample_id',id).order('created_at',{ascending:true}),
+        sb.from('analyses').select('*').eq('sample_id',id).order('measured_at',{ascending:false,nullsLast:true}).order('created_at',{ascending:false}),
+        sb.from('sample_events').select('*').eq('sample_id',id).order('created_at',{ascending:true}),
+        sb.from('sample_measurements').select('*').eq('sample_id',id).order('created_at',{ascending:false})
+      ]);
+      return {
+        sample: must(sample),
+        images: must(images) || [],
+        analyses: must(analyses) || [],
+        events: must(events) || [],
+        measurements: must(measurements) || []
+      };
+    },
+    async events() {
+      return must(await sb.from('sample_events').select('*').order('created_at',{ascending:false}).limit(500)) || [];
+    },
+    async isStaff() {
+      return Boolean(must(await sb.rpc('is_staff')));
+    },
+    async knownIds(ids=[]) {
+      const wanted=[...new Set(ids.filter(Boolean))], out=new Set();
+      for(let i=0;i<wanted.length;i+=200) {
+        const rows=must(await sb.from('samples').select('id').in('id',wanted.slice(i,i+200))) || [];
+        rows.forEach(r=>out.add(r.id));
+      }
+      return out;
+    },
+    async peekId(code='AHM') {
+      return must(await sb.rpc('peek_next_sample_id',{p_code:code}));
+    },
+    async addSample(payload) {
+      return must(await sb.from('samples').insert(payload).select('*').single());
+    },
+    async addMedia(payload) {
+      return must(await sb.from('sample_images').insert(payload).select('*').single());
+    },
+    async addRaw(payload) {
+      return must(await sb.from('raw_files').insert(payload).select('*').single());
+    },
+    async rawByHash(hash) {
+      return must(await sb.from('raw_files').select('*').eq('sha256',hash).maybeSingle());
+    },
+    async addAnalyses(rows) {
+      if(!rows?.length) return 0;
+      const data=must(await sb.from('analyses').upsert(rows,{onConflict:'sample_id,reading_hash',ignoreDuplicates:true}).select('id'));
+      return data?.length||0;
+    },
+    async imports() {
+      return must(await sb.from('import_batches').select('*,raw_files(file_name,sha256)').order('created_at',{ascending:false}).limit(50)) || [];
+    },
+    async addImport(payload) {
+      return must(await sb.from('import_batches').insert(payload).select('*').single());
+    },
+    async addUnmatched(rows) {
+      if(!rows?.length) return [];
+      return must(await sb.from('import_unmatched_rows').insert(rows).select('id')) || [];
+    },
+    async saveMeasurement(payload) {
+      return must(await sb.from('sample_measurements').insert(payload).select('*').single());
+    }
+  };
+
   // ── whole-screen states (no shell) ─────────────────────────────────────────────────────────
   const brandBlock = `<div class="brand"><img src="${APP_LOGO}" alt="Australian Provenance Project"><div class="system"><img src="${SYS_LOGO}" alt=""> <span>ProvenanceOS</span></div></div>`;
   const authScreen = inner => { app.innerHTML = `<div class="auth"><section class="card auth-card">${brandBlock}${inner}</section></div>`; };
@@ -179,10 +318,10 @@
   // ── Vanta batch import ────────────────────────────────────────────────────────────────────
   function storageResults(results,unitsAssumed){if(!unitsAssumed)return results;return Object.fromEntries(Object.entries(results||{}).map(([el,r])=>[el,{...r,unit:r.lod?r.unit:'UNVERIFIED'}]));}
   function openImport(target){state.importTarget=target||null;modal('<div class="modal" id="modal"><div class="modal-box wide" tabindex="-1"><div class="modal-head"><div><span class="eyebrow">pXRF</span><h2 class="modal-title">'+(target?'Attach to '+esc(target):'Import Vanta export')+'</h2><p class="sub">'+(target?'This file is restricted to the named specimen.':'Choose the periodic Vanta CSV export. Every row with an exact specimen ID will attach automatically; unmatched rows remain in review.')+'</p></div><button class="close" data-action="close-modal">×</button></div><label class="dropzone">Choose CSV file<input type="file" accept=".csv,text/csv,text/plain" hidden data-change="pick-csv"></label><div id="import-summary"></div><div class="actions"><button class="secondary" data-action="close-modal">Cancel</button><button class="primary" id="import-btn" data-action="run-import" disabled>Import</button></div></div></div>');}
-  async function pickCsv(input){const file=input.files[0];input.value='';if(!file)return;const out=$('#import-summary'),btn=$('#import-btn');btn.disabled=true;state.plan=null;out.innerHTML='<div class="loading-inline">Reading and matching…</div>';try{state.plan=await buildPlan(file,state.importTarget);out.innerHTML=planSummary(state.plan);btn.disabled=!state.plan.rows.length;btn.textContent=state.plan.rows.length?'Import '+plural(state.plan.rows.length,'reading'):'Nothing to import';}catch(e){out.innerHTML='<div class="form-error">'+esc(errText(e))+'</div>';}}
+  async function pickCsv(input){const file=input.files[0];input.value='';if(!file)return;const out=$('#import-summary'),btn=$('#import-btn');btn.disabled=true;state.plan=null;out.innerHTML='<div class="loading-inline">Reading and matching…</div>';try{state.plan=await buildPlan(file,state.importTarget);out.innerHTML=planSummary(state.plan);const importable=state.plan.parsed.readings.length>0;btn.disabled=!importable;btn.textContent=state.plan.rows.length?'Import '+plural(state.plan.rows.length,'reading'):state.plan.parsed.readings.length?'Preserve export':'Nothing to import';}catch(e){out.innerHTML='<div class="form-error">'+esc(errText(e))+'</div>';}}
   async function buildPlan(file,target){if(file.size>50*1024*1024)throw new Error('That export is larger than 50 MB — check the selected file.');const parsed=Vanta.parse(await file.text()),fileHash=await sha256(file),known=target?new Set([target]):await api.knownIds([...new Set(parsed.readings.map(r=>r.sampleId).filter(Boolean))]),rows=[],skipped=[];for(const r of parsed.readings){let sid=null,why=null;if(target){if(!r.sampleId||r.sampleId===target)sid=target;else why='row is labelled '+r.sampleId;}else if(!r.sampleId)why='no specimen ID in row';else if(!known.has(r.sampleId))why=r.sampleId+' is not registered';else sid=r.sampleId;if(sid)rows.push({r,sid,readingHash:await sha256(JSON.stringify(r.raw))});else skipped.push({r,why});}return {file,fileName:file.name,fileHash,parsed,rows,skipped};}
   function planSummary(p){const bySample=new Map(),reasons=new Map();p.rows.forEach(x=>bySample.set(x.sid,(bySample.get(x.sid)||0)+1));p.skipped.forEach(x=>reasons.set(x.why,(reasons.get(x.why)||0)+1));return '<div class="import-summary"><div class="stats compact"><div><b>'+p.parsed.readings.length+'</b><span>Readings in file</span></div><div><b>'+p.rows.length+'</b><span>Exact matches</span></div><div><b>'+reasons.size+'</b><span>Review reasons</span></div></div><div class="section-title" style="margin-top:22px">Elements</div><div class="sub">'+p.parsed.elements.map(esc).join(' · ')+'</div>'+(bySample.size?'<div class="section-title" style="margin-top:22px">Matched specimens</div><div class="match-strip">'+[...bySample].map(([id,n])=>'<span>'+esc(id)+' · '+n+'</span>').join('')+'</div>':'')+(p.skipped.length?'<div class="review-box"><strong>'+p.skipped.length+' row'+(p.skipped.length===1?'':'s')+' held for review</strong><small>'+[...reasons].map(([r,n])=>n+' × '+esc(r)).join(' · ')+'</small><p>No reading is attached when ProvenanceOS cannot establish the specimen identity.</p></div>':'')+(p.parsed.warnings.map(w=>'<div class="warn">'+esc(w)+'</div>').join(''))+'</div>';}
-  async function runImport(){const p=state.plan,btn=$('#import-btn');if(!p?.rows.length)return;btn.disabled=true;btn.textContent='Preserving export…';let raw=null,inserted=0;try{raw=await api.rawByHash(p.fileHash);if(!raw){const storagePath=new Date().getFullYear()+'/'+p.fileHash+'.csv',rr=await sb.storage.from(RAW_BUCKET).upload(storagePath,p.file,{contentType:'text/csv',upsert:false});if(rr.error&&!/already exists/i.test(rr.error.message))throw rr.error;try{raw=await api.addRaw({file_name:p.fileName,storage_path:storagePath,content_type:'text/csv',size_bytes:p.file.size,sha256:p.fileHash,parser_version:PARSER_VERSION,metadata:{header_row:p.parsed.headerRowNo,delimiter:p.parsed.delimiter,elements:p.parsed.elements,warnings:p.parsed.warnings,units_assumed:p.parsed.unitsAssumed}})}catch(e){if(e?.code==='23505')raw=await api.rawByHash(p.fileHash);else throw e;}}const payload=p.rows.map(x=>({sample_id:x.sid,instrument:x.r.instrument||'Vanta',method:x.r.method,reading_no:x.r.readingNo,measured_at:x.r.measuredAt,results:storageResults(x.r.results,p.parsed.unitsAssumed),raw:x.r.raw,source_file:p.fileName,source_sha256:p.fileHash,reading_hash:x.readingHash,raw_file_id:raw.id,parser_version:PARSER_VERSION,match_method:'sample_id',match_confidence:1,match_basis:'exact specimen ID in source row'}));for(let i=0;i<payload.length;i+=250)inserted+=await api.addAnalyses(payload.slice(i,i+250));const dup=payload.length-inserted,batch=await api.addImport({raw_file_id:raw.id,parser_version:PARSER_VERSION,imported_count:inserted,duplicate_count:dup,skipped_count:p.skipped.length,warnings:p.parsed.warnings,metadata:{matched_specimens:[...new Set(payload.map(x=>x.sample_id))],units_assumed:p.parsed.unitsAssumed}});if(p.skipped.length)await api.addUnmatched(p.skipped.map(x=>({import_batch_id:batch.id,row_no:x.r.rowNo,sample_id:x.r.sampleId,reason:x.why,raw:x.r.raw})).slice(0,5000));closeModal();toast(plural(inserted,'reading')+' attached'+(dup?' · '+dup+' already held':'')+(p.skipped.length?' · '+p.skipped.length+' awaiting review':''));render({quiet:true});}catch(e){console.error(e);const box=$('#import-summary');if(box)box.insertAdjacentHTML('beforeend','<div class="form-error">'+esc(errText(e))+(inserted?' '+inserted+' readings were saved before the error; repeating the import is safe.':'')+'</div>');btn.disabled=false;btn.textContent='Try again';}}
+  async function runImport(){const p=state.plan,btn=$('#import-btn');if(!p?.parsed?.readings.length)return;btn.disabled=true;btn.textContent='Preserving export…';let raw=null,inserted=0;try{raw=await api.rawByHash(p.fileHash);if(!raw){const storagePath=new Date().getFullYear()+'/'+p.fileHash+'.csv',rr=await sb.storage.from(RAW_BUCKET).upload(storagePath,p.file,{contentType:'text/csv',upsert:false});if(rr.error&&!/already exists/i.test(rr.error.message))throw rr.error;try{raw=await api.addRaw({file_name:p.fileName,storage_path:storagePath,content_type:'text/csv',size_bytes:p.file.size,sha256:p.fileHash,parser_version:PARSER_VERSION,metadata:{header_row:p.parsed.headerRowNo,delimiter:p.parsed.delimiter,elements:p.parsed.elements,warnings:p.parsed.warnings,units_assumed:p.parsed.unitsAssumed}})}catch(e){if(e?.code==='23505')raw=await api.rawByHash(p.fileHash);else throw e;}}const payload=p.rows.map(x=>({sample_id:x.sid,instrument:x.r.instrument||'Vanta',method:x.r.method,reading_no:x.r.readingNo,measured_at:x.r.measuredAt,results:storageResults(x.r.results,p.parsed.unitsAssumed),raw:x.r.raw,source_file:p.fileName,source_sha256:p.fileHash,reading_hash:x.readingHash,raw_file_id:raw.id,parser_version:PARSER_VERSION,match_method:'sample_id',match_confidence:1,match_basis:'exact specimen ID in source row'}));for(let i=0;i<payload.length;i+=250)inserted+=await api.addAnalyses(payload.slice(i,i+250));const dup=payload.length-inserted,batch=await api.addImport({raw_file_id:raw.id,parser_version:PARSER_VERSION,imported_count:inserted,duplicate_count:dup,skipped_count:p.skipped.length,warnings:p.parsed.warnings,metadata:{matched_specimens:[...new Set(payload.map(x=>x.sample_id))],units_assumed:p.parsed.unitsAssumed}});if(p.skipped.length)await api.addUnmatched(p.skipped.map(x=>({import_batch_id:batch.id,row_no:x.r.rowNo,sample_id:x.r.sampleId,reason:x.why,raw:x.r.raw})).slice(0,5000));closeModal();toast(plural(inserted,'reading')+' attached'+(dup?' · '+dup+' already held':'')+(p.skipped.length?' · '+p.skipped.length+' awaiting review':''));render({quiet:true});}catch(e){console.error(e);const box=$('#import-summary');if(box)box.insertAdjacentHTML('beforeend','<div class="form-error">'+esc(errText(e))+(inserted?' '+inserted+' readings were saved before the error; repeating the import is safe.':'')+'</div>');btn.disabled=false;btn.textContent='Try again';}}
 
   // ── measurement + masking ────────────────────────────────────────────────────────────────
   function openMeasure(){const d=state.detail;if(!d?.images?.length)return toast('Capture a visible-light image first.','error');const vis=d.images.find(x=>x.capture_kind==='visible')||d.images[0],u=d.urlOf(vis.storage_path);if(!u)return toast('The image is not available yet.','error');modal('<div class="modal" id="modal"><div class="modal-box wide" tabindex="-1"><div class="modal-head"><div><span class="eyebrow">Camera measurement</span><h2 class="modal-title">Measure with a known reference.</h2><p class="sub">Traceable 2D estimate only. The app does not infer thickness from a single image.</p></div><button class="close" data-action="close-modal">×</button></div><div class="measure-intro"><label class="field"><span>Reference length (mm)</span><input id="ref-mm" value="10" inputmode="decimal"></label><p>Put a ruler or known reference in the same image plane. Tap its endpoints, then tap the specimen endpoints.</p></div><div class="measure-canvas-wrap"><img id="measure-img" data-image-id="'+esc(vis.id)+'" src="'+esc(u)+'" alt="Measurement image"><canvas id="measure-canvas"></canvas></div><div class="measure-status" id="measure-status">1. Tap the two ends of the known reference.</div><div class="measure-results" id="measure-results"></div><div class="actions"><button class="secondary" data-action="reset-measure">Reset</button><button class="primary" data-action="save-measure" data-id="'+esc(d.sample.id)+'" disabled>Save estimate</button></div></div></div>');initMeasure();}
@@ -253,18 +392,24 @@
   }
 
   async function boot() {
-    if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_KEY) return showFatal('The Supabase library didn’t load. Check your connection and reload.');
-    if (!sb) {
-      sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
-      sb.auth.onAuthStateChange(event => { if (event === 'SIGNED_OUT') setTimeout(() => { state.user = null; state.detail = null; urlCache.clear(); showLogin(); }, 0); });
+    try {
+      if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_KEY) return showFatal('The Supabase library didn’t load. Check your connection and reload.');
+      if (!sb) {
+        sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+        sb.auth.onAuthStateChange(event => { if (event === 'SIGNED_OUT') setTimeout(() => { state.user = null; state.detail = null; urlCache.clear(); showLogin(); }, 0); });
+      }
+      showBooting();
+      const schema = await checkSchema();
+      if (schema === 'offline') return showFatal('Can’t reach Supabase. Check your signal and try again.');
+      if (schema === 'missing') return showSetup();
+      const { data: { session }, error } = await sb.auth.getSession();
+      if (error) throw error;
+      if (!session) return showLogin();
+      await afterAuth();
+    } catch (e) {
+      console.error('[ProvenanceOS boot]', e);
+      showFatal(errText(e));
     }
-    showBooting();
-    const schema = await checkSchema();
-    if (schema === 'offline') return showFatal('Can’t reach Supabase. Check your signal and try again.');
-    if (schema === 'missing') return showSetup();
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) return showLogin();
-    await afterAuth();
   }
 
   boot();
