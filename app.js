@@ -5,14 +5,14 @@
   const RAW_BUCKET = cfg.RAW_BUCKET || 'vanta-raw';
   // The "-light" files are the white artwork; this UI is dark, so those are the ones that show up.
   const APP_LOGO = 'assets/app-light.png';
-  const SYS_LOGO = 'assets/provenanceos-light.png';
+  const SYS_LOGO = 'assets/Provwhlog.svg';
   const NAV = ['Home','Samples','XRF Inbox','Evidence','Reference Data','Provenance','Settings'];
   const NAV_SLUG = {'XRF Inbox':'xrf-inbox','Reference Data':'reference-data'};
   const TYPES = [
     {code:'AHM',name:'Andamooka Hard Matrix',short:'Hard Matrix',note:'opal-bearing hard matrix'},
     {code:'ACC',name:'Andamooka Coloured Concrete',short:'Coloured Concrete',note:'iron-stained / coloured concrete'},
     {code:'ACX',name:'Andamooka Crystal Opal',short:'Crystal Opal',note:'crystal / transparent opal'},
-    {code:'OTH',name:'Unknown / Other',short:'Unknown / Other',note:'use when classification is not yet defensible'}
+    {code:'OTH',name:'Unknown/Other/Mixed',short:'Unknown / Other',note:'use when classification is not yet defensible'}
   ];
   const TYPE_BY_CODE = Object.fromEntries(TYPES.map(t=>[t.code,t]));
   const MAX_IMAGE = 25 * 1024 * 1024, MAX_VIDEO = 75 * 1024 * 1024;
