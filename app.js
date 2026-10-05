@@ -7,6 +7,7 @@
   const APP_LOGO = 'assets/app-light.png';
   const SYS_LOGO = 'assets/provenanceos-light.png';
   const NAV = ['Home','Samples','XRF Inbox','Evidence','Reference Data','Provenance','Settings'];
+  const NAV_SLUG = {'XRF Inbox':'xrf-inbox','Reference Data':'reference-data'};
   const TYPES = [
     {code:'AHM',name:'Andamooka Hard Matrix',short:'Hard Matrix',note:'opal-bearing hard matrix'},
     {code:'ACC',name:'Andamooka Coloured Concrete',short:'Coloured Concrete',note:'iron-stained / coloured concrete'},
@@ -223,7 +224,7 @@
   // ── shell + router ─────────────────────────────────────────────────────────────────────────
   function ensureShell(active) {
     if (!app.querySelector('.shell')) {
-      app.innerHTML = `<div class="shell"><aside class="rail">${brandBlock}<nav class="nav" aria-label="Main">${NAV.map(n => `<button data-action="nav" data-page="${n === 'XRF Inbox' ? 'xrf-inbox' : n.toLowerCase()}">${n}</button>`).join('')}</nav></aside><main class="content" id="content"></main></div>`;
+      app.innerHTML = `<div class="shell"><aside class="rail">${brandBlock}<nav class="nav" aria-label="Main">${NAV.map(n => `<button data-action="nav" data-page="${NAV_SLUG[n] || n.toLowerCase()}">${n}</button>`).join('')}</nav></aside><main class="content" id="content"></main></div>`;
     }
     app.querySelectorAll('.nav button').forEach(b => {
       const on = b.dataset.page === active;
@@ -232,7 +233,7 @@
     });
   }
 
-  const pages = { home: pageHome, samples: pageSamples, sample: pageSample, 'xrf-inbox': pageXrfInbox, evidence: pageEvidence, provenance: pageProvenance, settings: pageSettings };
+  const pages = { home: pageHome, samples: pageSamples, sample: pageSample, 'xrf-inbox': pageXrfInbox, evidence: pageEvidence, 'reference-data': pageReferenceData, provenance: pageProvenance, settings: pageSettings };
 
   function parseRoute() {
     const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
