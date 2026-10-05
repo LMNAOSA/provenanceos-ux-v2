@@ -75,7 +75,7 @@
     });
   }
 
-  const pages = { home: pageHome, samples: pageSamples, sample: pageSample, analysis: pageAnalysis, provenance: pageProvenance, settings: pageSettings };
+  const pages = { home: pageHome, samples: pageSamples, sample: pageSample, 'xrf-inbox': pageXrfInbox, evidence: pageEvidence, provenance: pageProvenance, settings: pageSettings };
 
   function parseRoute() {
     const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
@@ -103,7 +103,8 @@
 
   const go = hash => { if (location.hash === hash) render(); else location.hash = hash; };
   const header = (eyebrow, title, sub, action = '') => `<div class="top"><div><div class="eyebrow">${eyebrow}</div><h1 class="title">${title}</h1>${sub ? `<div class="sub">${sub}</div>` : ''}</div>${action}</div>`;
-  const newSampleBtn = '<button class="primary" data-action="new-sample">＋ New sample</button>';
+  const newSampleBtn = '<button class="primary" data-action="new-sample">＋ Register specimen</button>';
+  const fmtDT = fmtDateTime;
   const emptyBox = text => `<div class="empty">${text}</div>`;
 
   // ── pages / specimen workflow ─────────────────────────────────────────────────────────────
@@ -206,7 +207,7 @@
     'new-evidence':e=>openEvidence(state.detail?.sample.id,e.dataset.kind||'visible'),'capture-evidence':()=>openEvidence(state.detail?.sample.id,'visible'),'save-evidence':e=>saveEvidence(e.dataset.sampleId),
     'import-csv':e=>openImport(e.dataset.id||null),'run-import':runImport,'tab':e=>{state.tab=e.dataset.tab;$('#content').innerHTML=samplePageHTML(state.detail)},
     'measure':openMeasure,'reset-measure':resetMeasure,'save-measure':e=>saveMeasure(e.dataset.id),'apply-mask':e=>applyMask(+e.dataset.i),'close-mask':()=>{document.getElementById('mask-modal')?.remove();state.maskResult=null;},
-    'filter-type':async e=>{const list=await api.overview({limit:500,kind:e.dataset.code}),u=await signed(list.map(x=>x.cover_thumb_path||x.cover_path)),box=$('#sample-list');if(box)box.innerHTML=list.map(s=>sampleRow(s,u)).join('')||'<div class="empty-state"><p>No specimens in that class yet.</p></div>';document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b===e));},
+    'filter-type':async e=>{const all=await api.overview({limit:500}),list=e.dataset.code==='ALL'?all:all.filter(s=>s.sample_code===e.dataset.code),u=await signed(list.map(x=>x.cover_thumb_path||x.cover_path)),box=$('#sample-list');if(box)box.innerHTML=list.map(s=>sampleRow(s,u)).join('')||'<div class="empty-state"><p>No specimens in that class yet.</p></div>';document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b===e));},
     'capture-mode':e=>setCaptureKind(e.dataset.kind)
   };
   const changes={'pick-media':chooseMedia,'pick-csv':pickCsv};
