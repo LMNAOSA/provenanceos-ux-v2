@@ -6,8 +6,8 @@
   // The "-light" files are the white artwork; this UI is dark, so those are the ones that show up.
   const APP_LOGO = 'assets/app-light.png';
   const SYS_LOGO = 'assets/Provwhlog.svg';
-  const NAV = ['Home','Samples','XRF Inbox','Evidence','Reference Data','Provenance','Settings'];
-  const NAV_SLUG = {'XRF Inbox':'xrf-inbox','Reference Data':'reference-data'};
+  const NAV = ['Home','Samples','XRF Inbox','Evidence','Reference Data','Method','Provenance','Settings'];
+  const NAV_SLUG = {'XRF Inbox':'xrf-inbox','Reference Data':'reference-data','Method':'method'};
   const TYPES = [
     {code:'AHM',name:'Andamooka Hard Matrix',short:'Hard Matrix',note:'opal-bearing hard matrix'},
     {code:'ACC',name:'Andamooka Coloured Concrete',short:'Coloured Concrete',note:'iron-stained / coloured concrete'},
@@ -21,7 +21,7 @@
   const MAX_PHOTO_BYTES = 25 * 1024 * 1024; // matches the bucket limit in supabase/schema.sql
 
   const app = document.getElementById('app');
-  const state = { user:null, detail:null, tab:'Overview', shots:[], stream:null, mediaRecorder:null, recordChunks:[], captureKind:'visible', plan:null, importTarget:null, selectedMeasure:null, segmenter:null, segmenterModule:null, segmenterLoading:false };
+  const state = { user:null, detail:null, tab:'Overview', shots:[], stream:null, mediaRecorder:null, recordChunks:[], captureKind:'visible', plan:null, importTarget:null, selectedMeasure:null, segmenter:null, segmenterModule:null, segmenterLoading:false, historyPlan:null };
 
   // ── runtime / data layer ──────────────────────────────────────────────────────────────────
   let sb = null;
@@ -103,14 +103,16 @@
         sb.from('sample_images').select('*').eq('sample_id',id).order('created_at',{ascending:true}),
         sb.from('analyses').select('*').eq('sample_id',id).order('measured_at',{ascending:false,nullsLast:true}).order('created_at',{ascending:false}),
         sb.from('sample_events').select('*').eq('sample_id',id).order('created_at',{ascending:true}),
-        sb.from('sample_measurements').select('*').eq('sample_id',id).order('created_at',{ascending:false})
+        sb.from('sample_measurements').select('*').eq('sample_id',id).order('created_at',{ascending:false}),
+        sb.from('sample_treatments').select('*').eq('sample_id',id).order('created_at',{ascending:false})
       ]);
       return {
         sample: must(sample),
         images: must(images) || [],
         analyses: must(analyses) || [],
         events: must(events) || [],
-        measurements: must(measurements) || []
+        measurements: must(measurements) || [],
+        treatments: must(treatments) || []
       };
     },
     async events() {
@@ -159,6 +161,9 @@
     },
     async saveMeasurement(payload) {
       return must(await sb.from('sample_measurements').insert(payload).select('*').single());
+    },
+    async addTreatment(payload) {
+      return must(await sb.from('sample_treatments').insert(payload).select('*').single());
     },
     async historicalDatasets() {
       return must(await sb.from('historical_datasets').select('*,raw_files(file_name,sha256)').order('created_at',{ascending:false}).limit(50)) || [];
@@ -233,11 +238,11 @@
     });
   }
 
-  const pages = { home: pageHome, samples: pageSamples, sample: pageSample, 'xrf-inbox': pageXrfInbox, evidence: pageEvidence, 'reference-data': pageReferenceData, provenance: pageProvenance, settings: pageSettings };
+  const pages = { home: pageHome, samples: pageSamples, sample: pageSample, 'xrf-inbox': pageXrfInbox, evidence: pageEvidence, 'reference-data': pageReferenceData, method: pageMethod, provenance: pageProvenance, settings: pageSettings };
 
   function parseRoute() {
     const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
-    const page = parts[0] === 'samples' && parts[1] ? 'sample' : (parts[0] === 'reference-data' ? 'reference-data' : (parts[0] || 'home'));
+    const page = parts[0] === 'samples' && parts[1] ? 'sample' : (['reference-data','method'].includes(parts[0]) ? parts[0] : (parts[0] || 'home'));
     return { page: pages[page] ? page : 'home', id: parts[1] ? decodeURIComponent(parts[1]) : null };
   }
 
@@ -294,11 +299,30 @@
   async function pageReferenceData(){
     const datasets=await api.historicalDatasets();
     return header('Reference data','Historical datasets','Original scientific records that inform provenance without becoming physical specimens.',
-      '<button class="primary" data-action="import-history">＋ Import historical CSV</button>')+
-      '<section class="surface">'+
-      '<div class="surface-head"><div><span class="eyebrow">Archive</span><h3>Historical reference datasets</h3></div></div>'+
+      '<div class="header-actions"><button class="secondary" data-action="import-history">＋ Import CSV / XLSX</button><button class="primary" data-action="import-bundled-history">Import bundled 2018 dataset</button></div>')+
+      '<section class="surface"><div class="surface-head"><div><span class="eyebrow">Archive</span><h3>Historical reference datasets</h3></div></div>'+
       (datasets.length ? '<div class="dataset-list">'+datasets.map(d=>'<article class="dataset-row"><div><strong>'+esc(d.name)+'</strong><small>'+esc(d.dataset_type)+' · '+fmtDT(d.created_at)+'</small></div><div class="import-metrics"><span>'+(d.metadata?.record_count||0)+' records</span><span>'+(d.metadata?.observation_count||0)+' observations</span><span>'+esc((d.raw_files?.sha256||'').slice(0,12))+'…</span></div></article>').join('') :
       '<div class="empty-state compact"><p>No historical reference datasets have been imported.</p><p class="sub">These records remain separate from AHM, ACC, ACX and OTH specimens.</p></div>')+
+      '</section>';
+  }
+
+  async function pageMethod(){
+    return header('Field method','ProvenanceOS™ method','The operating record for specimen capture, pXRF handling and evidence discipline.',
+      '<button class="secondary" data-action="open-method-file">View source document</button>')+
+      '<section class="surface method-doc">'+
+      '<div class="method-kicker">AUSTRALIAN PROVENANCE PROJECT</div>'+
+      '<h2>ProvenanceOS™</h2><p class="method-lead">A field-first specimen registry for Andamooka material, pXRF evidence and visual capture.</p>'+
+      '<h3>Field workflow</h3>'+
+      '<p><b>Register once.</b><br>Choose from AHM — Andamooka Hard Matrix, ACC — Andamooka Coloured Concrete, ACX — Andamooka Crystal Opal, or OTH — Unknown / Other. The database assigns the next class-specific number, so you'll never type an ID.</p>'+
+      '<p><b>Capture evidence.</b> Visible light is the normal specimen record. Fluorescence and phosphorescence are first-class capture modes and can be photographs or video.</p>'+
+      '<p><b>Import Vanta data in batches.</b> Export a periodic CSV from the Vanta. ProvenanceOS™ hashes and preserves the original CSV, parses the readings, and attaches every row carrying an exact specimen ID, not a horrible one-reading-at-a-time workflow.</p>'+
+      '<p><b>Review exceptions.</b> A missing, unknown or conflicting specimen ID is not guessed. The source row is retained as an unmatched record for human review.</p>'+
+      '<p><b>Measure carefully.</b> The camera can produce a 2D length estimate only when a known reference is visible in the same plane. It is explicitly labelled as a derived estimate, not laboratory metrology and not a guessed thickness.</p>'+
+      '<p><b>Create presentation cutouts.</b> Background removal uses on-device interactive segmentation. The original photograph remains untouched; the cutout is stored as a derived media item with a processing method and link to the source. Photograph the stone against the cleanest background possible.</p>'+
+      '<h3>Scientific defensibility</h3><ul class="method-list">'+
+      '<li>Original Vanta CSV files are stored in a private bucket and hashed with SHA-256.</li><li>The exact parsed Vanta row is retained in <code>analyses.raw</code>.</li><li>Exact specimen-ID matching is recorded as the match method with full confidence; non-exact rows are not silently attached.</li><li>Units that were absent from the export are stored as UNVERIFIED rather than silently treated as ppm.</li><li>&lt;LOD, ND and related values remain below-detection flags and are never converted to zero by the application.</li><li>Original media are immutable evidence; thumbnails and masks are derivatives.</li><li>Derived camera measurements retain reference pixels, specimen pixels and source image ID.</li><li>IDs are unique and concurrency-safe but intentionally not gap-free.</li></ul>'+
+      '<h3>Vanta setup</h3><p>Configure the Vanta export/Auto Export so the sample identifier is written into the export row, preferably through the Vanta Notes/Sample field. The exact specimen ID is the authoritative link between the instrument result and the physical specimen.</p>'+
+      '<h3>Treatment record</h3><p>For treated matrix, record the treatment independently from the XRF measurement. An observed S result is an elemental observation; it is not a direct measurement of treatment dose. Record the treatment process and whatever inputs are actually known, then compare treated/untreated analytical observations without rewriting either record.</p>'+
       '</section>';
   }
 
@@ -313,15 +337,34 @@
   async function pageProvenance(){const events=await api.events();return header('ProvenanceOS','Provenance','A quiet history of what happened to each specimen.')+'<section class="surface"><div class="events">'+(events.map(e=>'<button class="event" data-action="open-sample" data-id="'+esc(e.sample_id)+'"><i class="event-line"></i><span><strong>'+esc(e.sample_id)+' · '+esc(EVENT_LABEL[e.kind]||e.kind)+'</strong><small>'+esc(eventDetail(e))+'</small></span><time>'+fmtDT(e.created_at)+'</time></button>').join('')||'<div class="empty-state"><p>No events yet.</p></div>')+'</div></section>';}
   async function pageSettings(){let host=cfg.SUPABASE_URL||'';try{host=new URL(host).host}catch{}return header('ProvenanceOS','Settings','The instrument and evidence registry are append-only by design.')+'<section class="surface settings"><div><span class="eyebrow">Signed in</span><p>'+esc(state.user.email)+'</p></div><div><span class="eyebrow">Database</span><p>'+esc(host)+'</p></div><div><span class="eyebrow">Parser</span><p>'+PARSER_VERSION+'</p></div><div><span class="eyebrow">Evidence</span><p>Originals + SHA-256 + derived lineage</p></div><div class="actions"><button class="secondary" data-action="sign-out">Sign out</button></div></section>';}
 
-  const pageMap={home:pageHome,samples:pageSamples,'xrf-inbox':pageXrfInbox,evidence:pageEvidence,'reference-data':pageReferenceData,provenance:pageProvenance,settings:pageSettings,sample:pageSample};
+  const pageMap={home:pageHome,samples:pageSamples,'xrf-inbox':pageXrfInbox,evidence:pageEvidence,'reference-data':pageReferenceData,method:pageMethod,provenance:pageProvenance,settings:pageSettings,sample:pageSample};
   async function pageSample(id){const changed=state.detail?.sample?.id!==id,d=await api.sampleDetail(id);if(!d.sample)return header('Sample','Not found','No record exists for '+esc(id));if(changed)state.tab='Overview';state.detail=d;d.urlOf=await signed(d.images.flatMap(x=>[x.storage_path,x.thumb_path]));return samplePageHTML(d);}
   function samplePageHTML(d){const s=d.sample,cover=d.images.find(x=>x.capture_kind==='visible')||d.images[0],coverUrl=cover&&d.urlOf(cover.storage_path),tabs=['Overview','Evidence','Analysis','History'];return header('Specimen record',esc(s.id),typePill(s.sample_code)+' '+esc(typeInfo(s.sample_code).name)+' · '+esc(s.location||'Location not recorded'),'<button class="primary" data-action="import-csv" data-id="'+esc(s.id)+'">＋ Attach pXRF</button>')+'<div class="record-grid"><section class="specimen-stage '+(coverUrl?'has-image':'')+'">'+(coverUrl?'<img src="'+esc(coverUrl)+'" alt="'+esc(s.id)+'">':'<div class="stage-empty">No visible-light specimen image yet.<br><button class="secondary" data-action="capture-evidence">Add evidence</button></div>')+'<div class="stage-id"><span>'+esc(s.id)+'</span><small>permanent specimen identity</small></div></section><section class="surface record-panel"><div class="record-top"><div><span class="eyebrow">Registered '+fmtDate(s.created_at)+'</span><h2>'+esc(s.id)+'</h2><p>'+esc(typeInfo(s.sample_code).note)+'</p></div><button class="quiet-action" data-action="new-evidence">＋ Capture</button></div><div class="tabs">'+tabs.map(t=>'<button class="'+(t===state.tab?'active':'')+'" data-action="tab" data-tab="'+t+'">'+t+'</button>').join('')+'</div>'+recordTab(d)+'</section></div>';}
-  function recordTab(d){const s=d.sample;if(state.tab==='Evidence')return evidenceTab(d);if(state.tab==='Analysis')return analysisTab(d);if(state.tab==='History')return historyTab(d);const latest=d.analyses[0],m=d.measurements?.[0];return '<div class="facts"><div><span>Location</span><b>'+esc(s.location||'—')+'</b></div><div><span>Weight</span><b>'+(s.weight_g!=null?fmtNum(s.weight_g)+' g':'—')+'</b></div><div><span>Dimension estimate</span><b>'+(m?fmtNum(m.dimensions?.length_mm)+' mm (2D)':'Not measured')+'</b></div><div><span>Evidence sets</span><b>'+([...new Set(d.images.map(x=>x.capture_kind))].map(esc).join(' · ')||'—')+'</b></div></div><div class="scientific-note"><span class="eyebrow">Evidence discipline</span><p>Original media and source Vanta rows are preserved. Derived masks and camera estimates remain explicitly labelled as derivatives.</p></div>'+(latest?'<div class="analysis-preview"><div class="surface-head"><div><span class="eyebrow">Latest pXRF</span><h3>'+esc(latest.instrument||'Vanta')+' · '+esc(latest.method||'Method not recorded')+'</h3></div><button class="quiet-action" data-action="tab" data-tab="Analysis">View data</button></div>'+elementGrid(latest)+'</div>':'<div class="empty-state compact"><p>No pXRF result attached yet.</p><button class="secondary" data-action="import-csv" data-id="'+esc(s.id)+'">Import Vanta data</button></div>');}
+  function treatmentStatus(d){
+    const t=d.treatments?.[0];
+    if(!t)return '<div class="treatment-strip"><div><span class="eyebrow">Treatment</span><strong>Not recorded</strong><small>No treatment history has been entered for this specimen.</small></div><button class="secondary" data-action="add-treatment">＋ Record</button></div>';
+    const label=t.treatment_status==='treated'?'Treated':t.treatment_status==='untreated'?'Untreated':'Unknown';
+    const details=[t.treatment_method,t.reagent_name,t.reagent_concentration_pct!=null?t.reagent_concentration_pct+'%':'' ,t.treatment_duration_min!=null?fmtNum(t.treatment_duration_min)+' min':''].filter(Boolean).join(' · ');
+    return '<div class="treatment-strip '+t.treatment_status+'"><div><span class="eyebrow">Treatment</span><strong>'+esc(label)+'</strong><small>'+esc(details||'Process details recorded in history.')+'</small></div><button class="secondary" data-action="add-treatment">＋ Add event</button></div>';
+  }
+  function recordTab(d){const s=d.sample;if(state.tab==='Evidence')return evidenceTab(d);if(state.tab==='Analysis')return analysisTab(d);if(state.tab==='History')return historyTab(d);const latest=d.analyses[0],m=d.measurements?.[0];const sulfur=latest?.results?.S;return '<div class="facts"><div><span>Location</span><b>'+esc(s.location||'—')+'</b></div><div><span>Weight</span><b>'+(s.weight_g!=null?fmtNum(s.weight_g)+' g':'—')+'</b></div><div><span>Dimension estimate</span><b>'+(m?fmtNum(m.dimensions?.length_mm)+' mm (2D)':'Not measured')+'</b></div><div><span>Evidence sets</span><b>'+([...new Set(d.images.map(x=>x.capture_kind))].map(esc).join(' · ')||'—')+'</b></div></div>'+treatmentStatus(d)+'<div class="scientific-note"><span class="eyebrow">Evidence discipline</span><p>Original media and source Vanta rows are preserved. Derived masks and camera estimates remain explicitly labelled as derivatives.</p></div>'+(sulfur?'<div class="scientific-note"><span class="eyebrow">Sulfur observation</span><p><b>'+esc(sulfur.lod?'&lt;LOD':fmtNum(sulfur.value))+' '+esc(sulfur.unit||'')+'</b> observed in the latest pXRF reading. This is an elemental observation, not a treatment-dose estimate.</p></div>':'')+(latest?'<div class="analysis-preview"><div class="surface-head"><div><span class="eyebrow">Latest pXRF</span><h3>'+esc(latest.instrument||'Vanta')+' · '+esc(latest.method||'Method not recorded')+'</h3></div><button class="quiet-action" data-action="tab" data-tab="Analysis">View data</button></div>'+elementGrid(latest)+'</div>':'<div class="empty-state compact"><p>No pXRF result attached yet.</p><button class="secondary" data-action="import-csv" data-id="'+esc(s.id)+'">Import Vanta data</button></div>');}
   function evidenceTab(d){const sections=[['Visible light','Original daylight / normal capture','visible'],['Fluorescence','UV response — wavelength/source can be noted','fluorescence'],['Phosphorescence','Afterglow sequence — photo or video','phosphorescence']];return '<div class="capture-toolbar"><button class="secondary" data-action="new-evidence">＋ Evidence</button><button class="secondary" data-action="measure">Measure with camera</button></div><div class="evidence-sections">'+sections.map(x=>evidenceSection(x[0],x[1],d.images.filter(i=>i.capture_kind===x[2]),d,x[2])).join('')+'</div>';}
   function evidenceSection(title,sub,list,d,kind){const tiles=list.map(x=>{const u=d.urlOf(x.storage_path)||d.urlOf(x.thumb_path),video=(x.media_type||'').startsWith('video/');return '<div class="media-tile">'+(u?(video?'<video controls preload="metadata" src="'+esc(u)+'"></video>':'<img src="'+esc(u)+'" alt="'+esc(x.file_name||title)+'">'):'<span class="tile-missing">Preview unavailable</span>')+'<div><strong>'+esc(x.file_name||title)+'</strong><small>'+esc(x.processing_method||'original')+' · '+fmtDate(x.created_at)+'</small></div></div>';}).join('');return '<section><div class="section-intro"><div><span class="eyebrow">'+title+'</span><p>'+sub+'</p></div><button class="quiet-action" data-action="new-evidence" data-kind="'+kind+'">＋ Add</button></div><div class="media-grid">'+(tiles||'<div class="empty-state compact"><p>No capture yet.</p></div>')+'</div></section>';}
   function elementGrid(a){const els=Vanta.sortElements(Object.keys(a.results||{}));return '<div class="analysis-grid">'+els.map(el=>{const r=a.results[el],meta=r.lod?(r.limit!=null?'limit '+fmtNum(r.limit):'not detected'):[r.unit,r.error!=null?'± '+fmtNum(r.error):''].filter(Boolean).join(' · ');return '<div class="element"><span>'+esc(el)+'</span><b>'+(r.lod?'&lt;LOD':fmtNum(r.value))+'</b><small>'+esc(meta)+'</small></div>';}).join('')+'</div>';}
   function analysisTab(d){if(!d.analyses.length)return '<div class="empty-state"><h2>No pXRF attached</h2><p>Import one Vanta CSV and ProvenanceOS will connect all exact matches.</p><button class="primary" data-action="import-csv" data-id="'+esc(d.sample.id)+'">Import Vanta CSV</button></div>';return '<div class="analysis-head"><div><span class="eyebrow">'+d.analyses.length+' stored reading'+(d.analyses.length===1?'':'s')+'</span><p>Exact specimen-ID matches only. Source rows remain attached to the export hash.</p></div><button class="secondary" data-action="import-csv" data-id="'+esc(d.sample.id)+'">＋ Add export</button></div><div class="reading-list">'+d.analyses.map((a,i)=>'<article class="reading"><div><strong>#'+esc(a.reading_no||String(i+1))+'</strong><small>'+fmtDT(a.measured_at)+' · '+esc(a.instrument||'Vanta')+' · '+esc(a.method||'Method not recorded')+'</small></div>'+elementGrid(a)+'<div class="reading-foot"><span>'+esc(a.source_file||'Vanta export')+'</span><span class="hash">'+esc((a.source_sha256||'').slice(0,16))+'…</span></div></article>').join('')+'</div>';}
   function historyTab(d){return '<div class="events record-events">'+(d.events.map(e=>'<div class="event"><i class="event-line"></i><span><strong>'+esc(EVENT_LABEL[e.kind]||e.kind)+'</strong><small>'+esc(eventDetail(e))+'</small></span><time>'+fmtDT(e.created_at)+'</time></div>').join('')||'<div class="empty-state compact"><p>No recorded events.</p></div>')+'</div>';}
+
+  function openTreatment(){
+    const id=state.detail?.sample?.id;if(!id)return;
+    modal('<div class="modal" id="modal"><div class="modal-box wide" tabindex="-1"><div class="modal-head"><div><span class="eyebrow">Specimen treatment</span><h2 class="modal-title">Record what happened to the material.</h2><p class="sub">Treatment history is separate from pXRF chemistry. Do not infer treatment dose from an S result.</p></div><button class="close" data-action="close-modal">×</button></div><div class="fields"><div class="field"><label>Status</label><select id="t-status"><option value="unknown">Unknown</option><option value="untreated">Untreated</option><option value="treated">Treated</option></select></div><div class="field"><label>Method</label><input id="t-method" placeholder="e.g. sugar / acid carbonisation"></div><div class="field"><label>Reagent</label><input id="t-reagent" placeholder="Record the reagent actually used"></div><div class="field"><label>Reagent concentration (%)</label><input id="t-conc" inputmode="decimal"></div><div class="field"><label>Reagent amount / volume (mL)</label><input id="t-vol" inputmode="decimal"></div><div class="field"><label>Duration (min)</label><input id="t-duration" inputmode="decimal"></div><div class="field"><label>Temperature (°C)</label><input id="t-temp" inputmode="decimal"></div><div class="field"><label>Cycles</label><input id="t-cycles" inputmode="numeric"></div><div class="field"><label>Pre-treatment mass (g)</label><input id="t-pre" inputmode="decimal"></div><div class="field"><label>Post-treatment mass (g)</label><input id="t-post" inputmode="decimal"></div><div class="field full"><label>Operator</label><input id="t-operator"></div><div class="field full"><label>Notes</label><textarea id="t-notes" placeholder="Record known process details; do not fill unknown values by guesswork."></textarea></div></div><div class="scientific-note"><span class="eyebrow">Important</span><p>A sulfur reading from the Vanta is stored as chemistry. It is not converted into an estimate of sulfuric-acid treatment amount.</p></div><div class="actions"><button class="secondary" data-action="close-modal">Cancel</button><button class="primary" data-action="save-treatment">Save treatment record</button></div><div class="form-error" id="form-error"></div></div></div>');
+  }
+  async function saveTreatment(){
+    const id=state.detail?.sample?.id,err=$('#form-error');if(!id)return;
+    const num=id=>{const v=$(id)?.value?.trim();if(v==='')return null;const n=Number(v);return Number.isFinite(n)?n:null;};
+    const status=$('#t-status')?.value||'unknown';
+    const payload={sample_id:id,treatment_status:status,treatment_method:$('#t-method')?.value.trim()||null,reagent_name:$('#t-reagent')?.value.trim()||null,reagent_concentration_pct:num('#t-conc'),reagent_volume_ml:num('#t-vol'),treatment_duration_min:num('#t-duration'),temperature_c:num('#t-temp'),cycle_count:num('#t-cycles'),pre_treatment_mass_g:num('#t-pre'),post_treatment_mass_g:num('#t-post'),operator:$('#t-operator')?.value.trim()||null,treated_at:new Date().toISOString(),notes:$('#t-notes')?.value.trim()||null};
+    try{await api.addTreatment(payload);closeModal();state.detail=null;toast('Treatment record preserved');go(location.hash||('#/samples/'+encodeURIComponent(id)));}catch(e){err.textContent=errText(e);}
+  }
 
   // ── capture / media ────────────────────────────────────────────────────────────────────────
   function modal(html){closeModal();app.insertAdjacentHTML('beforeend',html);$('#modal .modal-box')?.focus();}
@@ -345,23 +388,59 @@
   function openEvidence(sampleId,kind){state.captureKind=['visible','fluorescence','phosphorescence'].includes(kind)?kind:'visible';modal('<div class="modal" id="modal"><div class="modal-box" tabindex="-1"><div class="modal-head"><div><span class="eyebrow">Evidence capture</span><h2 class="modal-title">'+(state.captureKind==='visible'?'Visible light':state.captureKind==='fluorescence'?'Fluorescence':'Phosphorescence')+'</h2><p class="sub">The original media is preserved. Derived presentation images are stored separately.</p></div><button class="close" data-action="close-modal">×</button></div><div class="capture-block"><div class="capture-switch">'+captureModeButtons()+'</div><div class="camera" id="camera"><div class="camera-guide"><span>Ready to capture</span><small>Use the same lighting setup consistently.</small></div></div><div class="camera-actions" id="camera-actions"></div><div class="shots" id="shots"></div></div><div class="evidence-instructions">For fluorescence and phosphorescence, note the excitation source and wavelength in the specimen notes when it matters. The video itself is the evidence record.</div><div class="actions"><button class="secondary" data-action="close-modal">Cancel</button><button class="primary" data-action="save-evidence" data-sample-id="'+esc(sampleId)+'">Preserve evidence</button></div><div class="form-error" id="form-error"></div></div></div>');renderCameraActions();}
   async function saveEvidence(sampleId){const err=$('#form-error');if(!state.shots.length){err.textContent='Capture or choose at least one item.';return;}let ok=0;for(const shot of state.shots){try{const original=await uploadMedia(sampleId,shot);if(shot.cutout?.file)await uploadMedia(sampleId,{file:shot.cutout.file,captureKind:shot.captureKind},{derived_from_id:original.id,is_original:false,processing_method:'MediaPipe Interactive Segmenter / confidence threshold 0.5',metadata:{derived_from:'original capture',threshold:0.5}});ok++}catch(e){err.textContent=errText(e)}}if(ok)toast(ok+' evidence item'+(ok===1?'':'s')+' preserved');closeModal();render({quiet:true});}
 
+  async function importBundledHistory(){
+    try{
+      const r=await fetch('supabase/2018_Historical_XRF_Data.xlsx',{cache:'no-store'});
+      if(!r.ok)throw new Error('The bundled 2018 historical workbook could not be loaded.');
+      const blob=await r.blob();
+      const file=new File([blob],'2018_Historical_XRF_Data.xlsx',{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      openHistoricalImport();
+      state.historyPlan=null;
+      const input=document.querySelector('#modal input[data-change="pick-history"]');
+      if(!input)throw new Error('Historical import control unavailable.');
+      const parsed=await parseHistoricalFile(file),fileHash=await sha256(file);
+      state.historyPlan={file,fileName:file.name,fileHash,parsed};
+      $('#history-name').value='2018 Historical XRF Dataset';
+      const locs=[...new Set(parsed.records.map(r=>r.location).filter(Boolean))];
+      $('#history-summary').innerHTML='<div class="import-summary"><div class="stats compact"><div><b>'+parsed.recordCount+'</b><span>Historical records</span></div><div><b>'+parsed.observationCount+'</b><span>Element observations</span></div><div><b>'+locs.length+'</b><span>Locations</span></div></div><div class="section-title" style="margin-top:22px">Source</div><div class="sub">Bundled workbook · '+esc(parsed.workbookSheet||'first worksheet')+' · SHA-256 '+esc(fileHash.slice(0,16))+'…</div></div>';
+      $('#history-import-btn').disabled=false;$('#history-import-btn').textContent='Preserve '+plural(parsed.recordCount,'record');
+    }catch(e){toast(errText(e),'error');}
+  }
+
   // ── Historical reference import ──────────────────────────────────────────────────────────
   const HISTORICAL_PARSER_VERSION='historical-soil-v1.0.0';
+  async function parseHistoricalFile(file){
+    const ext=(file.name.split('.').pop()||'').toLowerCase();
+    if(ext==='xlsx'||ext==='xls'){
+      if(!window.XLSX)throw new Error('The spreadsheet reader did not load. Reload the page and try again.');
+      const buf=await file.arrayBuffer();
+      const wb=window.XLSX.read(buf,{type:'array',cellDates:true});
+      const sheetName=wb.SheetNames[0];
+      if(!sheetName)throw new Error('No worksheet found.');
+      const ws=wb.Sheets[sheetName];
+      const csv=window.XLSX.utils.sheet_to_csv(ws,{blankrows:true});
+      const parsed=Vanta.parseHistoricalSoil(csv);
+      parsed.workbookSheet=sheetName;
+      parsed.sourceFormat='xlsx';
+      return parsed;
+    }
+    const parsed=Vanta.parseHistoricalSoil(await file.text());
+    parsed.sourceFormat='csv';
+    return parsed;
+  }
   function openHistoricalImport(){
-    modal('<div class="modal" id="modal"><div class="modal-box wide" tabindex="-1"><div class="modal-head"><div><span class="eyebrow">Reference data</span><h2 class="modal-title">Import historical soil data.</h2><p class="sub">The original file is preserved. Records remain separate from the physical specimen registry.</p></div><button class="close" data-action="close-modal">×</button></div><div class="fields"><div class="field"><label>Dataset name</label><input id="history-name" placeholder="e.g. 2018 soil reference dataset"></div></div><label class="dropzone">Choose historical CSV<input type="file" accept=".csv,text/csv,text/plain" hidden data-change="pick-history"></label><div id="history-summary"></div><div class="actions"><button class="secondary" data-action="close-modal">Cancel</button><button class="primary" id="history-import-btn" data-action="run-history-import" disabled>Import</button></div></div></div>');
+    modal('<div class="modal" id="modal"><div class="modal-box wide" tabindex="-1"><div class="modal-head"><div><span class="eyebrow">Reference data</span><h2 class="modal-title">Import historical soil data.</h2><p class="sub">The original file is preserved exactly. The worksheet is parsed into historical records only; no AHM, ACC, ACX or OTH identities are created.</p></div><button class="close" data-action="close-modal">×</button></div><div class="fields"><div class="field"><label>Dataset name</label><input id="history-name" placeholder="e.g. 2018 historical XRF dataset"></div></div><label class="dropzone">Choose historical CSV or Excel workbook<input type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden data-change="pick-history"></label><div id="history-summary"></div><div class="actions"><button class="secondary" data-action="close-modal">Cancel</button><button class="primary" id="history-import-btn" data-action="run-history-import" disabled>Import</button></div></div></div>');
   }
   async function pickHistoricalCsv(input){
     const file=input.files[0];input.value='';if(!file)return;
-    const out=$('#history-summary'),btn=$('#history-import-btn');
-    btn.disabled=true;state.historyPlan=null;out.innerHTML='<div class="loading-inline">Reading historical export…</div>';
+    const out=$('#history-summary'),btn=$('#history-import-btn');btn.disabled=true;state.historyPlan=null;out.innerHTML='<div class="loading-inline">Reading historical source…</div>';
     try{
-      if(file.size>50*1024*1024)throw new Error('That export is larger than 50 MB — check the selected file.');
-      const parsed=Vanta.parseHistoricalSoil(await file.text());
-      const fileHash=await sha256(file);
+      if(file.size>50*1024*1024)throw new Error('That source is larger than 50 MB — check the selected file.');
+      const parsed=await parseHistoricalFile(file),fileHash=await sha256(file);
       state.historyPlan={file,fileName:file.name,fileHash,parsed};
-      if(!$('#history-name').value.trim()) $('#history-name').value=file.name.replace(/\.[^.]+$/,'');
+      if(!$('#history-name').value.trim())$('#history-name').value=file.name.replace(/\.[^.]+$/,'');
       const locs=[...new Set(parsed.records.map(r=>r.location).filter(Boolean))];
-      out.innerHTML='<div class="import-summary"><div class="stats compact"><div><b>'+parsed.recordCount+'</b><span>Historical records</span></div><div><b>'+parsed.observationCount+'</b><span>Element observations</span></div><div><b>'+locs.length+'</b><span>Locations</span></div></div><div class="section-title" style="margin-top:22px">Elements</div><div class="sub">'+parsed.elements.map(esc).join(' · ')+'</div><div class="section-title" style="margin-top:22px">Source</div><div class="sub">'+esc(file.name)+' · SHA-256 '+esc(fileHash.slice(0,16))+'…</div>'+(parsed.warnings.map(w=>'<div class="warn">'+esc(w)+'</div>').join(''))+'</div>';
+      out.innerHTML='<div class="import-summary"><div class="stats compact"><div><b>'+parsed.recordCount+'</b><span>Historical records</span></div><div><b>'+parsed.observationCount+'</b><span>Element observations</span></div><div><b>'+locs.length+'</b><span>Locations</span></div></div><div class="section-title" style="margin-top:22px">Elements</div><div class="sub">'+parsed.elements.map(esc).join(' · ')+'</div><div class="section-title" style="margin-top:22px">Source</div><div class="sub">'+esc(file.name)+' · '+esc(parsed.sourceFormat.toUpperCase())+(parsed.workbookSheet?' · sheet '+esc(parsed.workbookSheet):'')+' · SHA-256 '+esc(fileHash.slice(0,16))+'…</div>'+(parsed.warnings.map(w=>'<div class="warn">'+esc(w)+'</div>').join(''))+'</div>';
       btn.disabled=false;btn.textContent='Preserve '+plural(parsed.recordCount,'record');
     }catch(e){out.innerHTML='<div class="form-error">'+esc(errText(e))+'</div>';}
   }
@@ -371,23 +450,20 @@
     try{
       let raw=await api.rawByHash(p.fileHash);
       if(raw){
-        const existing=await api.historicalByRawFile(raw.id);
-        if(existing)throw new Error('This historical source has already been imported.');
+        const existing=await api.historicalByRawFile(raw.id);if(existing)throw new Error('This historical source has already been imported.');
       }else{
-        const storagePath=new Date().getFullYear()+'/historical/'+p.fileHash+'.csv';
-        const rr=await sb.storage.from(RAW_BUCKET).upload(storagePath,p.file,{contentType:'text/csv',upsert:false});
+        const storagePath=new Date().getFullYear()+'/historical/'+p.fileHash+'.'+(p.fileName.toLowerCase().endsWith('.xlsx')?'xlsx':'csv');
+        const rr=await sb.storage.from(RAW_BUCKET).upload(storagePath,p.file,{contentType:p.file.type||'application/octet-stream',upsert:false});
         if(rr.error&&!/already exists/i.test(rr.error.message))throw rr.error;
-        try{raw=await api.addRaw({file_name:p.fileName,storage_path:storagePath,content_type:'text/csv',size_bytes:p.file.size,sha256:p.fileHash,parser_version:HISTORICAL_PARSER_VERSION,metadata:{header_row:p.parsed.headerRowNo,delimiter:p.parsed.delimiter,elements:p.parsed.elements,warnings:p.parsed.warnings,record_count:p.parsed.recordCount,observation_count:p.parsed.observationCount}})}
+        try{raw=await api.addRaw({file_name:p.fileName,storage_path:storagePath,content_type:p.file.type||'application/octet-stream',size_bytes:p.file.size,sha256:p.fileHash,parser_version:HISTORICAL_PARSER_VERSION,metadata:{header_row:p.parsed.headerRowNo,delimiter:p.parsed.delimiter,elements:p.parsed.elements,warnings:p.parsed.warnings,record_count:p.parsed.recordCount,observation_count:p.parsed.observationCount,source_format:p.parsed.sourceFormat,workbook_sheet:p.parsed.workbookSheet||null}})}
         catch(e){if(e?.code==='23505'){raw=await api.rawByHash(p.fileHash);if(await api.historicalByRawFile(raw.id))throw new Error('This historical source has already been imported.');}else throw e;}
       }
-      const dataset=await api.addHistoricalDataset({name:$('#history-name').value.trim()||p.fileName,dataset_type:'soil_reference',description:'Historical soil / pXRF reference dataset',raw_file_id:raw.id,parser_version:HISTORICAL_PARSER_VERSION,metadata:{source_file:p.fileName,source_sha256:p.fileHash,record_count:p.parsed.recordCount,observation_count:p.parsed.observationCount,elements:p.parsed.elements,units:p.parsed.units,locations:[...new Set(p.parsed.records.map(r=>r.location).filter(Boolean))].slice(0,500),warnings:p.parsed.warnings}});
+      const dataset=await api.addHistoricalDataset({name:$('#history-name').value.trim()||p.fileName,dataset_type:'soil_reference',description:'Historical soil / pXRF reference dataset',raw_file_id:raw.id,parser_version:HISTORICAL_PARSER_VERSION,metadata:{source_file:p.fileName,source_sha256:p.fileHash,record_count:p.parsed.recordCount,observation_count:p.parsed.observationCount,elements:p.parsed.elements,units:p.parsed.units,locations:[...new Set(p.parsed.records.map(r=>r.location).filter(Boolean))].slice(0,500),warnings:p.parsed.warnings,source_format:p.parsed.sourceFormat,workbook_sheet:p.parsed.workbookSheet||null}});
       btn.textContent='Storing records…';
       const recordRows=p.parsed.records.map(r=>({dataset_id:dataset.id,source_row_no:r.sourceRowNo,original_index:r.originalIndex,location:r.location,original_time:r.originalTime,measured_at_local:r.measuredAtLocal,time_ambiguous:r.timeAmbiguous,original_sample:r.originalSample,material_type:r.materialType,duration_s:r.durationS,units:r.units,sigma_value:r.sigmaValue,sequence:r.sequence,res:r.res,escale:r.eScale,shape_time:r.shapeTime,inspector:r.inspector,cor_1:r.cor1,cor_2:r.cor2,misc:r.misc,note:r.note,flags:r.flags,raw:r.raw}));
-      const stored=[];
-      for(let i=0;i<recordRows.length;i+=250)stored.push(...await api.addHistoricalRecords(recordRows.slice(i,i+250)));
+      const stored=[];for(let i=0;i<recordRows.length;i+=250)stored.push(...await api.addHistoricalRecords(recordRows.slice(i,i+250)));
       const idByRow=new Map(stored.map(r=>[r.source_row_no,r.id]));
-      const obs=[];
-      p.parsed.records.forEach(r=>r.observations.forEach(o=>{const recordId=idByRow.get(r.sourceRowNo);if(recordId)obs.push({record_id:recordId,analyte:o.analyte,raw_value:o.raw_value,value:o.value,qualifier:o.qualifier,detection_limit:o.detection_limit,raw_error:o.raw_error,error:o.error,unit:o.unit});}));
+      const obs=[];p.parsed.records.forEach(r=>r.observations.forEach(o=>{const recordId=idByRow.get(r.sourceRowNo);if(recordId)obs.push({record_id:recordId,analyte:o.analyte,raw_value:o.raw_value,value:o.value,qualifier:o.qualifier,detection_limit:o.detection_limit,raw_error:o.raw_error,error:o.error,unit:o.unit});}));
       for(let i=0;i<obs.length;i+=250)await api.addHistoricalObservations(obs.slice(i,i+250));
       closeModal();state.historyPlan=null;toast(dataset.name+' preserved · '+p.parsed.recordCount+' historical records');render({quiet:true});
     }catch(e){console.error(e);const box=$('#history-summary');if(box)box.insertAdjacentHTML('beforeend','<div class="form-error">'+esc(errText(e))+'</div>');btn.disabled=false;btn.textContent='Try again';}
@@ -422,7 +498,7 @@
     'start-camera':startCamera,'stop-camera':stopCamera,'capture-photo':capturePhoto,'record-video':recordVideo,'stop-recording':stopRecording,
     'remove-shot':e=>{const s=state.shots.splice(+e.dataset.i,1)[0];if(s?.url)URL.revokeObjectURL(s.url);renderShots()},'clean-shot':e=>openMask(+e.dataset.i),'save-sample':saveSample,
     'new-evidence':e=>openEvidence(state.detail?.sample.id,e.dataset.kind||'visible'),'capture-evidence':()=>openEvidence(state.detail?.sample.id,'visible'),'save-evidence':e=>saveEvidence(e.dataset.sampleId),
-    'import-csv':e=>openImport(e.dataset.id||null),'import-history':openHistoricalImport,'run-history-import':runHistoricalImport,'run-import':runImport,'tab':e=>{state.tab=e.dataset.tab;$('#content').innerHTML=samplePageHTML(state.detail)},
+    'import-csv':e=>openImport(e.dataset.id||null),'import-history':openHistoricalImport,'import-bundled-history':importBundledHistory,'open-method-file':()=>window.open('docs/PROVENANCEOS_FIELD_METHOD.md','_blank','noopener'),'run-history-import':runHistoricalImport,'add-treatment':openTreatment,'save-treatment':saveTreatment,'run-import':runImport,'tab':e=>{state.tab=e.dataset.tab;$('#content').innerHTML=samplePageHTML(state.detail)},
     'measure':openMeasure,'reset-measure':resetMeasure,'save-measure':e=>saveMeasure(e.dataset.id),'apply-mask':e=>applyMask(+e.dataset.i),'close-mask':()=>{document.getElementById('mask-modal')?.remove();state.maskResult=null;},
     'filter-type':async e=>{const all=await api.overview({limit:500}),list=e.dataset.code==='ALL'?all:all.filter(s=>s.sample_code===e.dataset.code),u=await signed(list.map(x=>x.cover_thumb_path||x.cover_path)),box=$('#sample-list');if(box)box.innerHTML=list.map(s=>sampleRow(s,u)).join('')||'<div class="empty-state"><p>No specimens in that class yet.</p></div>';document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b===e));},
     'capture-mode':e=>setCaptureKind(e.dataset.kind)
