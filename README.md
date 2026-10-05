@@ -43,9 +43,13 @@ Open http://127.0.0.1:8787.
 
 Run supabase/schema.sql in the Supabase SQL editor. The browser uses only the publishable key in config.js; never put a service-role or secret key in the repository.
 
+## Treatment records
+
+Run `supabase/sample_treatments.sql` after the main schema to enable treatment history. Treatment metadata is stored separately from pXRF chemistry. An observed S result is never converted into a treatment-dose estimate.
+
 ## Historical reference data
 
-Historical soil/pXRF exports are kept separate from physical AHM/ACC/ACX/OTH specimens. Run `supabase/historical_reference.sql` once after the main schema. The importer preserves the original source file/hash, original row fields, repeated header rows, original sample labels, units, errors and below-detection qualifiers, then stores one historical record per source row and one observation per element.
+Historical soil/pXRF CSV and XLSX exports are kept separate from physical AHM/ACC/ACX/OTH specimens. Run `supabase/historical_reference.sql` once after the main schema. The importer preserves the original source file/hash, original row fields, repeated header rows, original sample labels, units, errors and below-detection qualifiers, then stores one historical record per source row and one observation per element.
 
 This is reference evidence, not automatically ground truth: historical analytical methods and the original time/units context remain part of the record and are not silently normalised into modern specimen results.
 
