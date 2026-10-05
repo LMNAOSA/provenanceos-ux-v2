@@ -98,7 +98,7 @@
       return {samples:samples.count||0,photographed:images.count||0,analysed:analyses.count||0};
     },
     async sampleDetail(id) {
-      const [sample,images,analyses,events,measurements] = await Promise.all([
+      const [sample,images,analyses,events,measurements,treatments] = await Promise.all([
         sb.from('samples').select('*').eq('id',id).maybeSingle(),
         sb.from('sample_images').select('*').eq('sample_id',id).order('created_at',{ascending:true}),
         sb.from('analyses').select('*').eq('sample_id',id).order('measured_at',{ascending:false,nullsLast:true}).order('created_at',{ascending:false}),
