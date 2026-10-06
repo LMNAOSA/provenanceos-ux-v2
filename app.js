@@ -311,7 +311,7 @@
       'Field method',
       'ProvenanceOS™ method',
       'The operating record for specimen capture, pXRF handling and evidence discipline.',
-      '<a class="method-download" href="/field-guide.pdf" download="ProvenanceOS_Field_Guide_Mat.pdf" aria-label="Download ProvenanceOS Field Guide"><span>DOWNLOAD</span><span>FIELD GUIDE</span></a>'
+      '<a class="method-download" href="public/field-guide.pdf" download="ProvenanceOS_Field_Guide_Mat.pdf" aria-label="Download ProvenanceOS Field Guide"><span>DOWNLOAD</span><span>FIELD GUIDE</span></a>'
     )+
     '<section class="surface method-flow">'+
 
