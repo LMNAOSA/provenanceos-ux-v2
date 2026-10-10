@@ -4,37 +4,41 @@
  * Strictly isolates historical soil data from modern physical specimen registries.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useApp } from '../../context/AppContext';
 import { TopHeader } from '../layout/TopHeader';
 import { api } from '../../services/supabase';
 import type { HistoricalDataset } from '../../types';
 
 export const ReferenceDataView: React.FC = () => {
+  const { openModal } = useApp();
   const [datasets, setDatasets] = useState<HistoricalDataset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadDatasets = useCallback(() => {
     setLoading(true);
-
+    setError(null);
     api.historicalDatasets()
       .then(list => {
-        if (!isMounted) return;
         setDatasets(list);
       })
       .catch(err => {
-        if (!isMounted) return;
         setError(err instanceof Error ? err.message : String(err));
       })
       .finally(() => {
-        if (isMounted) setLoading(false);
+        setLoading(false);
       });
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
+
+  useEffect(() => {
+    loadDatasets();
+    const onRefresh = () => loadDatasets();
+    window.addEventListener('consol:data-updated', onRefresh);
+    return () => {
+      window.removeEventListener('consol:data-updated', onRefresh);
+    };
+  }, [loadDatasets]);
 
   return (
     <>
@@ -43,14 +47,21 @@ export const ReferenceDataView: React.FC = () => {
         title="Historical datasets"
         sub="Original scientific records that inform provenance without becoming physical specimens."
         action={
-          <div style={{ display: 'flex', gap: 8 }}>
-            <a
-              className="primary"
-              href="?runtime=legacy#/reference-data"
-              title="Launch historical CSV / XLSX import workflow"
+          <div className="header-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => openModal('import-history', { preloadBundled2018: false })}
             >
-              ＋ Import Reference Dataset
-            </a>
+              ＋ Import CSV / XLSX
+            </button>
+            <button
+              type="button"
+              className="primary"
+              onClick={() => openModal('import-history', { preloadBundled2018: true })}
+            >
+              Import bundled 2018 dataset
+            </button>
           </div>
         }
       />

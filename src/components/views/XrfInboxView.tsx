@@ -1,40 +1,44 @@
 /**
  * CONSOL XRFInboxView Component
  * Displays batch ingestion history, raw file hashes, match statistics, and review records.
- * Direct bridge provided to verified batch ingestion workflow pending Stage 5.
+ * Launches the native mobile-safe Vanta CSV batch importer directly.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useApp } from '../../context/AppContext';
 import { TopHeader } from '../layout/TopHeader';
 import { api } from '../../services/supabase';
 import type { ImportBatch } from '../../types';
 
 export const XrfInboxView: React.FC = () => {
+  const { openModal } = useApp();
   const [imports, setImports] = useState<ImportBatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadImports = useCallback(() => {
     setLoading(true);
-
+    setError(null);
     api.imports()
       .then(list => {
-        if (!isMounted) return;
         setImports(list);
       })
       .catch(err => {
-        if (!isMounted) return;
         setError(err instanceof Error ? err.message : String(err));
       })
       .finally(() => {
-        if (isMounted) setLoading(false);
+        setLoading(false);
       });
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
+
+  useEffect(() => {
+    loadImports();
+    const onRefresh = () => loadImports();
+    window.addEventListener('consol:data-updated', onRefresh);
+    return () => {
+      window.removeEventListener('consol:data-updated', onRefresh);
+    };
+  }, [loadImports]);
 
   return (
     <>
@@ -43,13 +47,13 @@ export const XrfInboxView: React.FC = () => {
         title="XRF Inbox"
         sub="Drop in a Vanta export periodically. One file can connect hundreds of readings."
         action={
-          <a
+          <button
+            type="button"
             className="primary"
-            href="?runtime=legacy#/xrf-inbox"
-            title="Launch interactive batch CSV importer via verified recovery mode"
+            onClick={() => openModal('import-csv', { sampleId: null })}
           >
             ＋ Import Vanta CSV
-          </a>
+          </button>
         }
       />
 
@@ -78,7 +82,7 @@ export const XrfInboxView: React.FC = () => {
             <h3>Recent exports</h3>
           </div>
           <small style={{ color: 'var(--muted)' }}>
-            Stage 4 Operational View · Interactive CSV dropzone active via verified legacy recovery
+            SHA-256 verified source exports · Exact specimen-ID matching
           </small>
         </div>
 

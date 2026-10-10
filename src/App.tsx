@@ -1,6 +1,8 @@
 /**
  * CONSOL Application Root
- * Orchestrates authentication state, context providers, and the application shell.
+ * Orchestrates authentication state, route protection, context providers, and the application shell.
+ * Protected application content (<AppProvider><Shell /></AppProvider>) only mounts after both
+ * a valid Supabase session AND staff membership (isStaff) have been verified.
  */
 
 import React from 'react';
@@ -16,7 +18,7 @@ import {
 } from './components/auth/AuthScreens';
 
 const AppContent: React.FC = () => {
-  const { status } = useAuth();
+  const { status, isStaff, session, user } = useAuth();
 
   switch (status) {
     case 'booting':
@@ -30,7 +32,14 @@ const AppContent: React.FC = () => {
     case 'pending':
       return <PendingScreen />;
     case 'authenticated':
-      return <Shell />;
+      if (!isStaff || !session || !user) {
+        return <LoginScreen />;
+      }
+      return (
+        <AppProvider>
+          <Shell />
+        </AppProvider>
+      );
     default:
       return <BootingScreen />;
   }
@@ -39,9 +48,7 @@ const AppContent: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AppProvider>
-        <AppContent />
-      </AppProvider>
+      <AppContent />
     </AuthProvider>
   );
 };

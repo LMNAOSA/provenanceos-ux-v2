@@ -12,7 +12,7 @@
 
 import config from '../config';
 import { getSupabase, api } from './supabase';
-import { sha256, validateMedia, generateThumbnailBlob } from './media';
+import { sha256, validateMedia, generateThumbnailBlob, resolveMediaMime } from './media';
 import type { CaptureKind, SpecimenImage } from '../types';
 
 export type UploadState = 'pending' | 'uploading' | 'saved' | 'failed' | 'retryable';
@@ -48,6 +48,7 @@ const EXTENSIONS: Record<string, string> = {
  */
 export function createShotItem(file: File, kind: CaptureKind): ShotItem {
   validateMedia(file);
+  const resolvedMime = resolveMediaMime(file) || 'application/octet-stream';
 
   const url = typeof URL !== 'undefined' ? URL.createObjectURL(file) : '';
   return {
@@ -55,7 +56,7 @@ export function createShotItem(file: File, kind: CaptureKind): ShotItem {
     file,
     url,
     captureKind: kind,
-    mime: file.type || 'application/octet-stream',
+    mime: resolvedMime,
     state: 'pending'
   };
 }
@@ -78,7 +79,7 @@ export async function uploadEvidenceShot(
 
   const sb = getSupabase();
   const bucket = sb.storage.from(config.BUCKET);
-  const mime = shot.file.type || 'application/octet-stream';
+  const mime = resolveMediaMime(shot.file) || shot.mime || 'application/octet-stream';
 
   // Step 1: Compute SHA-256 evidence hash if not already computed
   let hash = shot.sha256;

@@ -1,25 +1,24 @@
 /**
- * CONSOL Icon-Led Scientific Workstation Rail
- * UX Reset Step 4 + Navigation Design Addendum
+ * CONSOL Adaptive Scientific Workstation Rail (BUILD 01)
+ * Version 3.3 — Normal Workstation Mode, SOLARIUM Instrument Mode & Mobile Drawer
  *
- * Visual & Functional Specification:
- * - Fine-line Lucide-style SVG icons (18px, 1.65px stroke, consistent optical alignment)
- * - No icons on nested module rows
- * - Target desktop width: 232px (compact icon-only mode: 64px)
- * - One pillar expanded at a time by default
- * - Required destinations:
- *   • Workbench (House icon)
- *   • Collection (Archive icon): Specimens, XRF Inbox, Evidence, Reference Data, Field Method
- *   • Science (Flask icon): Investigations (The Lab)
- *   • Visualisation (Precision scan icon): SOLARIUM
- *   • Workspace (Connected-nodes icon): Provenance
- *   • Settings (Settings icon, pinned to bottom)
- * - Mobile: Five-destination navigation bar (Workbench + 4 pillars) with contextual module strip
+ * Modes:
+ * 1. Normal Workstation Mode (232px desktop):
+ *    - CONSOL branding at the top
+ *    - Workbench + 4 pillars (Collection, Science, Visualisation, Workspace)
+ *    - Working modules nested beneath each pillar
+ *    - Settings anchored to the bottom
+ * 2. Instrument Mode (60px desktop, auto-activated on #/solarium):
+ *    - Compact 60px icon rail freeing horizontal viewport width for the 3D chamber
+ *    - Accessible pillar icons with tooltips and active SOLARIUM indicator
+ *    - Explicit "Expand Navigation" / "Collapse Navigation" control
+ * 3. Mobile Compact Navigation:
+ *    - Purposeful top bar with on-demand pillar/module menu drawer (never permanently obstructing 3D viewport)
  */
 
 import React from 'react';
 import config from '../../config';
-import { PILLARS, PillarId, getNavigableModulesByPillar } from '../../types/routes';
+import { PILLARS, PillarId, APP_ROUTES, getNavigableModulesByPillar } from '../../types/routes';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 
@@ -71,7 +70,7 @@ const IconNodes: React.FC = () => (
 const IconSettings: React.FC = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <circle cx="12" cy="12" r="3" />
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82-.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
   </svg>
 );
 
@@ -103,6 +102,23 @@ const IconPanelCollapse: React.FC<{ collapsed: boolean }> = ({ collapsed }) => (
   </svg>
 );
 
+const IconMenu: React.FC<{ open: boolean }> = ({ open }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {open ? (
+      <>
+        <path d="M18 6L6 18" />
+        <path d="M6 6l12 12" />
+      </>
+    ) : (
+      <>
+        <path d="M4 7h16" />
+        <path d="M4 12h16" />
+        <path d="M4 17h16" />
+      </>
+    )}
+  </svg>
+);
+
 function renderPillarIcon(pillar: PillarId) {
   switch (pillar) {
     case 'COLLECTION':
@@ -124,16 +140,22 @@ export const Rail: React.FC = () => {
     activePillar,
     expandedPillars,
     togglePillar,
+    navigationMode,
     railCollapsed,
     setRailCollapsed,
+    mobileNavOpen,
+    setMobileNavOpen,
     navigate
   } = useApp();
   const { user } = useAuth();
 
   const activeRouteKey = route === 'sample' ? 'samples' : route;
+  const currentRouteMeta = APP_ROUTES.find(r => r.id === activeRouteKey);
+  const currentSectionTitle = currentRouteMeta?.name || 'Workbench';
 
   const handleModuleClick = (moduleRoute: string, hash: string | null) => {
     if (!hash) return;
+    setMobileNavOpen(false);
     if (moduleRoute === 'solarium' && activeSpecimenId) {
       navigate(`#/solarium/${encodeURIComponent(activeSpecimenId)}`);
       return;
@@ -144,7 +166,7 @@ export const Rail: React.FC = () => {
   const handlePillarHeaderClick = (pillarId: PillarId) => {
     const modules = getNavigableModulesByPillar(pillarId);
     if (railCollapsed) {
-      // In icon-only mode, clicking a pillar navigates directly to its primary module
+      // In compact/instrument icon-only mode, clicking a pillar icon navigates directly to its primary module
       const primary = modules[0];
       if (primary?.hash) {
         handleModuleClick(primary.route || '', primary.hash);
@@ -162,38 +184,58 @@ export const Rail: React.FC = () => {
     togglePillar(pillarId);
   };
 
-  // Determine which pillar's modules to display in the mobile contextual sub-bar
-  const mobileContextualPillar: PillarId | null =
-    activePillar ||
-    (Object.keys(expandedPillars) as PillarId[]).find(k => expandedPillars[k]) ||
-    null;
-
-  const mobileContextModules = mobileContextualPillar
-    ? getNavigableModulesByPillar(mobileContextualPillar)
-    : [];
+  const isInstrumentMode = route === 'solarium';
 
   return (
     <aside
-      className={`rail pillar-rail ${railCollapsed ? 'is-collapsed' : ''}`}
+      className={`rail pillar-rail ${railCollapsed ? 'is-collapsed' : ''} ${
+        isInstrumentMode ? 'is-instrument-rail' : ''
+      }`}
       aria-label="CONSOL Navigation"
+      data-nav-mode={navigationMode}
     >
-      {/* Top Brand & Compact Icon-Only Toggle */}
+      {/* Top Brand & Expand/Collapse Rail Control */}
       <div className="rail-head">
         <div className="brand">
-          {!railCollapsed && (
-            <img src={config.APP_LOGO} alt="Australian Provenance Project" />
+          {!railCollapsed ? (
+            <div className="consol-brand-lockup">
+              <img src={config.CONSOL_LOGO} alt="CONSOL" className="consol-logo-svg" />
+            </div>
+          ) : (
+            <span className="consol-compact-mark" title="CONSOL Scientific Workstation">
+              ◈
+            </span>
           )}
         </div>
         <button
           type="button"
           className="rail-collapse-btn"
           onClick={() => setRailCollapsed(!railCollapsed)}
-          aria-label={railCollapsed ? 'Expand navigation rail' : 'Collapse navigation rail'}
-          title={railCollapsed ? 'Expand navigation rail' : 'Compact icon-only rail'}
+          aria-label={railCollapsed ? 'Expand Navigation' : 'Collapse Navigation'}
+          title={
+            railCollapsed
+              ? 'Expand Navigation (232px)'
+              : isInstrumentMode
+                ? 'Collapse to Instrument Mode (60px)'
+                : 'Collapse Navigation (60px)'
+          }
         >
           <IconPanelCollapse collapsed={railCollapsed} />
         </button>
       </div>
+
+      {/* Instrument Mode Status / Quick Expand Button when in SOLARIUM */}
+      {isInstrumentMode && (
+        <button
+          type="button"
+          className="instrument-rail-toggle-bar"
+          onClick={() => setRailCollapsed(!railCollapsed)}
+          title={railCollapsed ? 'Expand Navigation' : 'Collapse to Instrument Rail'}
+        >
+          <IconPanelCollapse collapsed={railCollapsed} />
+          {!railCollapsed && <span>Collapse to Instrument Mode</span>}
+        </button>
+      )}
 
       {/* Persistent Active Specimen Context */}
       {activeSpecimenId && !railCollapsed && (
@@ -237,6 +279,19 @@ export const Rail: React.FC = () => {
         </div>
       )}
 
+      {/* Compact Specimen Indicator when Rail is Collapsed */}
+      {activeSpecimenId && railCollapsed && (
+        <button
+          type="button"
+          className="rail-specimen-compact-badge"
+          onClick={() => navigate(`#/samples/${encodeURIComponent(activeSpecimenId)}`)}
+          title={`Active Specimen: ${activeSpecimenId} (click to open record)`}
+          aria-label={`Active Specimen ${activeSpecimenId}`}
+        >
+          <span className="specimen-dot-mini" />
+        </button>
+      )}
+
       {/* Desktop / Tablet Primary Navigation */}
       <nav className="pillar-nav desktop-pillar-nav" aria-label="Primary">
         {/* Workbench Entry */}
@@ -246,6 +301,7 @@ export const Rail: React.FC = () => {
           aria-current={route === 'home' ? 'page' : undefined}
           onClick={() => navigate('#/home')}
           title="Workbench"
+          aria-label="Workbench"
         >
           <span className="rail-icon">
             <IconHouse />
@@ -261,18 +317,27 @@ export const Rail: React.FC = () => {
             const isPillarActive = activePillar === pillar.id;
             const isExpanded = expandedPillars[pillar.id];
             const modules = getNavigableModulesByPillar(pillar.id);
+            const tooltipLabel =
+              pillar.id === 'VISUALISATION'
+                ? 'Visualisation · SOLARIUM'
+                : pillar.id === 'SCIENCE'
+                  ? 'Science · Investigations'
+                  : `${pillar.label} (${modules.map(m => m.label).join(', ')})`;
 
             return (
               <div
                 key={pillar.id}
-                className={`pillar-group ${isPillarActive ? 'is-active-pillar' : ''} ${isExpanded ? 'is-expanded' : ''}`}
+                className={`pillar-group ${isPillarActive ? 'is-active-pillar' : ''} ${
+                  isExpanded ? 'is-expanded' : ''
+                }`}
               >
                 <button
                   type="button"
                   className={`rail-item-btn pillar-trigger ${isPillarActive ? 'is-active' : ''}`}
                   aria-expanded={!railCollapsed ? isExpanded : undefined}
+                  aria-label={tooltipLabel}
                   onClick={() => handlePillarHeaderClick(pillar.id)}
-                  title={pillar.label}
+                  title={tooltipLabel}
                 >
                   <span className="rail-icon">{renderPillarIcon(pillar.id)}</span>
                   {!railCollapsed && (
@@ -286,7 +351,11 @@ export const Rail: React.FC = () => {
                 </button>
 
                 {!railCollapsed && isExpanded && (
-                  <div className="pillar-modules" role="group" aria-label={`${pillar.label} destinations`}>
+                  <div
+                    className="pillar-modules"
+                    role="group"
+                    aria-label={`${pillar.label} destinations`}
+                  >
                     {modules.map(mod => {
                       const isModActive = mod.route === activeRouteKey;
                       return (
@@ -309,74 +378,110 @@ export const Rail: React.FC = () => {
         </div>
       </nav>
 
-      {/* Mobile 5-Destination Navigation Bar (Workbench + 4 Pillars) */}
-      <nav className="mobile-five-nav" aria-label="Mobile Primary">
-        <div className="mobile-five-row">
+      {/* Mobile Compact Header + On-Demand Pillar/Module Menu Drawer */}
+      <div className="mobile-compact-header">
+        <div className="mobile-header-left">
           <button
             type="button"
-            className={`mobile-dest-btn ${route === 'home' ? 'is-active' : ''}`}
-            onClick={() => navigate('#/home')}
+            className="mobile-brand-btn"
+            onClick={() => {
+              setMobileNavOpen(false);
+              navigate('#/home');
+            }}
           >
-            <IconHouse />
-            <span>Workbench</span>
+            <img src={config.CONSOL_LOGO} alt="CONSOL" className="mobile-consol-logo" />
           </button>
+          <span className="mobile-route-sep">/</span>
+          <span className="mobile-current-location">{currentSectionTitle}</span>
+        </div>
+
+        <div className="mobile-header-right">
+          {activeSpecimenId && (
+            <button
+              type="button"
+              className="mobile-specimen-pill"
+              onClick={() => {
+                setMobileNavOpen(false);
+                navigate(`#/samples/${encodeURIComponent(activeSpecimenId)}`);
+              }}
+              title={`Active specimen: ${activeSpecimenId}`}
+            >
+              {activeSpecimenId}
+            </button>
+          )}
+          <button
+            type="button"
+            className={`mobile-menu-trigger ${mobileNavOpen ? 'is-open' : ''}`}
+            onClick={() => setMobileNavOpen(!mobileNavOpen)}
+            aria-expanded={mobileNavOpen}
+            aria-label={mobileNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          >
+            <IconMenu open={mobileNavOpen} />
+            <span>{mobileNavOpen ? 'Close' : 'Navigate'}</span>
+          </button>
+        </div>
+      </div>
+
+      {mobileNavOpen && (
+        <nav className="mobile-nav-drawer" aria-label="Mobile Navigation Menu">
+          <div className="mobile-drawer-section">
+            <button
+              type="button"
+              className={`mobile-drawer-item ${route === 'home' ? 'is-active' : ''}`}
+              onClick={() => {
+                setMobileNavOpen(false);
+                navigate('#/home');
+              }}
+            >
+              <IconHouse />
+              <span>Workbench</span>
+            </button>
+          </div>
 
           {PILLARS.map(pillar => {
-            const isPillarSelected = activePillar === pillar.id || (route === 'home' && expandedPillars[pillar.id]);
             const modules = getNavigableModulesByPillar(pillar.id);
             return (
-              <button
-                key={pillar.id}
-                type="button"
-                className={`mobile-dest-btn ${activePillar === pillar.id ? 'is-active' : ''}`}
-                aria-expanded={isPillarSelected}
-                onClick={() => {
-                  togglePillar(pillar.id);
-                  if (modules.length === 1 && modules[0].hash) {
-                    handleModuleClick(modules[0].route || '', modules[0].hash);
-                  } else if (activePillar !== pillar.id && modules[0]?.hash) {
-                    handleModuleClick(modules[0].route || '', modules[0].hash);
-                  }
-                }}
-              >
-                {renderPillarIcon(pillar.id)}
-                <span>{pillar.label}</span>
-              </button>
+              <div key={pillar.id} className="mobile-drawer-pillar">
+                <div className="mobile-drawer-pillar-head">
+                  {renderPillarIcon(pillar.id)}
+                  <span>{pillar.label}</span>
+                </div>
+                <div className="mobile-drawer-modules">
+                  {modules.map(mod => {
+                    const isModActive = mod.route === activeRouteKey;
+                    return (
+                      <button
+                        key={mod.id}
+                        type="button"
+                        className={`mobile-drawer-mod-btn ${isModActive ? 'is-active' : ''}`}
+                        onClick={() => handleModuleClick(mod.route || '', mod.hash)}
+                      >
+                        {mod.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
 
-          <button
-            type="button"
-            className={`mobile-dest-btn ${route === 'settings' ? 'is-active' : ''}`}
-            onClick={() => navigate('#/settings')}
-            aria-label="Settings"
-          >
-            <IconSettings />
-            <span>Settings</span>
-          </button>
-        </div>
-
-        {/* Contextual Module Strip on Mobile when active pillar has working destinations */}
-        {route !== 'home' && route !== 'settings' && mobileContextModules.length > 0 && (
-          <div className="mobile-context-modules" role="group" aria-label="Module navigation">
-            {mobileContextModules.map(mod => {
-              const isModActive = mod.route === activeRouteKey;
-              return (
-                <button
-                  key={mod.id}
-                  type="button"
-                  className={`mobile-module-chip ${isModActive ? 'is-active' : ''}`}
-                  onClick={() => handleModuleClick(mod.route || '', mod.hash)}
-                >
-                  {mod.label}
-                </button>
-              );
-            })}
+          <div className="mobile-drawer-footer">
+            <button
+              type="button"
+              className={`mobile-drawer-item ${route === 'settings' ? 'is-active' : ''}`}
+              onClick={() => {
+                setMobileNavOpen(false);
+                navigate('#/settings');
+              }}
+            >
+              <IconSettings />
+              <span>Settings {user?.email ? `(${user.email})` : ''}</span>
+            </button>
           </div>
-        )}
-      </nav>
+        </nav>
+      )}
 
-      {/* Bottom Pinned Settings */}
+      {/* Bottom Pinned Settings & Provenance OS Mark (Desktop) */}
       <div className="rail-footer">
         <button
           type="button"
@@ -384,6 +489,7 @@ export const Rail: React.FC = () => {
           aria-current={route === 'settings' ? 'page' : undefined}
           onClick={() => navigate('#/settings')}
           title="Settings"
+          aria-label="Settings"
         >
           <span className="rail-icon">
             <IconSettings />
@@ -395,6 +501,11 @@ export const Rail: React.FC = () => {
             </span>
           )}
         </button>
+        {!railCollapsed && (
+          <div className="rail-provos-footer">
+            <img src={config.PROVOS_LOGO} alt="Provenance OS" className="rail-provos-logo" />
+          </div>
+        )}
       </div>
     </aside>
   );

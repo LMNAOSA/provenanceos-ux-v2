@@ -1,12 +1,21 @@
 /**
  * CONSOL AppContext
- * Coordinates four-pillar navigation (one pillar expanded at a time by default),
- * persistent specimen context across modules, navigation history, hash routing,
- * toast messaging, and modal infrastructure.
+ * Version 3.3 — Adaptive Instrument UX + Four-Pillar Workstation State
+ *
+ * Manages:
+ * - Adaptive navigation modes:
+ *   • 'workstation': Normal 232px rail for Collection, Science, and Workspace
+ *   • 'instrument': Compact 60px icon rail automatically activated in SOLARIUM (expandable on demand)
+ *   • 'immersive': Full-viewport instrument mode in SOLARIUM with minimal chrome (Esc exits)
+ * - Persistent activeSpecimenId across all pillars and modules
+ * - One-pillar-at-a-time default accordion behaviour
+ * - Hash routing, toast messaging, and Stage 5A modal state
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { AppRoute, PillarId, parseHash, getPillarForRoute } from '../types/routes';
+
+export type NavigationMode = 'workstation' | 'instrument' | 'immersive';
 
 export interface ToastState {
   message: string;
@@ -31,8 +40,15 @@ export interface AppContextValue {
   activePillar: PillarId | null;
   expandedPillars: Record<PillarId, boolean>;
   togglePillar: (pillar: PillarId) => void;
+  navigationMode: NavigationMode;
   railCollapsed: boolean;
   setRailCollapsed: (collapsed: boolean) => void;
+  instrumentRailExpanded: boolean;
+  setInstrumentRailExpanded: (expanded: boolean) => void;
+  immersiveMode: boolean;
+  setImmersiveMode: (immersive: boolean) => void;
+  mobileNavOpen: boolean;
+  setMobileNavOpen: (open: boolean) => void;
   navigationHistory: NavigationHistoryEntry[];
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -48,10 +64,9 @@ export interface AppContextValue {
 const STORAGE_KEYS = {
   ACTIVE_SPECIMEN: 'consol.activeSpecimenId',
   EXPANDED_PILLARS: 'consol.expandedPillars.v2',
-  RAIL_COLLAPSED: 'consol.railCollapsed'
+  WORKSTATION_RAIL_COLLAPSED: 'consol.workstationRailCollapsed'
 };
 
-// One pillar expanded at a time by default
 const DEFAULT_EXPANDED_PILLARS: Record<PillarId, boolean> = {
   COLLECTION: true,
   SCIENCE: false,
@@ -68,7 +83,15 @@ function singleExpandedPillar(target: PillarId): Record<PillarId, boolean> {
   };
 }
 
-const AppContext = createContext<AppContextValue | null>(null);
+const GLOBAL_APP_CTX_KEY = '__CONSOL_APP_REACT_CONTEXT__';
+const GLOBAL_APP_VAL_KEY = '__CONSOL_APP_LATEST_VALUE__';
+const globalStore = globalThis as unknown as Record<string, unknown>;
+
+const AppContext: React.Context<AppContextValue | null> =
+  (globalStore[GLOBAL_APP_CTX_KEY] as React.Context<AppContextValue | null>) ||
+  ((globalStore[GLOBAL_APP_CTX_KEY] = createContext<AppContextValue | null>(
+    null
+  )) as React.Context<AppContextValue | null>);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [route, setRoute] = useState<AppRoute>('home');
@@ -98,16 +121,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return DEFAULT_EXPANDED_PILLARS;
   });
 
-  const [railCollapsed, setRailCollapsedState] = useState<boolean>(() => {
+  // Workstation rail collapse preference (used outside SOLARIUM)
+  const [workstationRailCollapsed, setWorkstationRailCollapsed] = useState<boolean>(() => {
     try {
       if (typeof window !== 'undefined') {
-        return window.localStorage.getItem(STORAGE_KEYS.RAIL_COLLAPSED) === 'true';
+        return window.localStorage.getItem(STORAGE_KEYS.WORKSTATION_RAIL_COLLAPSED) === 'true';
       }
     } catch {
       // ignore
     }
     return false;
   });
+
+  // Instrument mode rail override: in SOLARIUM, rail defaults to collapsed (false = compact 60px instrument rail)
+  // Researchers can expand the rail while in SOLARIUM and collapse it again.
+  const [instrumentRailExpanded, setInstrumentRailExpanded] = useState<boolean>(false);
+
+  // Immersive full-viewport instrument mode inside SOLARIUM
+  const [immersiveMode, setImmersiveModeState] = useState<boolean>(false);
+
+  // Mobile navigation drawer state
+  const [mobileNavOpen, setMobileNavOpen] = useState<boolean>(false);
 
   const [navigationHistory, setNavigationHistory] = useState<NavigationHistoryEntry[]>([]);
   const [activeTab, setActiveTab] = useState<string>('Overview');
@@ -136,7 +170,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
-  // Accordion behaviour: one pillar expanded at a time by default
   const togglePillar = useCallback((pillar: PillarId) => {
     setExpandedPillars(prev => {
       const willOpen = !prev[pillar];
@@ -154,22 +187,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, []);
 
+  // Effective railCollapsed state:
+  // - In SOLARIUM: collapsed by default (!instrumentRailExpanded)
+  // - In other workspaces: uses workstationRailCollapsed (false by default -> 232px normal rail)
+  const railCollapsed = route === 'solarium' ? !instrumentRailExpanded : workstationRailCollapsed;
+
   const setRailCollapsed = useCallback((collapsed: boolean) => {
-    setRailCollapsedState(collapsed);
+    if (route === 'solarium') {
+      setInstrumentRailExpanded(!collapsed);
+      return;
+    }
+    setWorkstationRailCollapsed(collapsed);
     try {
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEYS.RAIL_COLLAPSED, String(collapsed));
+        window.localStorage.setItem(STORAGE_KEYS.WORKSTATION_RAIL_COLLAPSED, String(collapsed));
       }
     } catch {
       // ignore
     }
+  }, [route]);
+
+  const setImmersiveMode = useCallback((immersive: boolean) => {
+    setImmersiveModeState(immersive);
+    if (immersive) {
+      setMobileNavOpen(false);
+    }
   }, []);
+
+  const navigationMode: NavigationMode = useMemo(() => {
+    if (route === 'solarium') {
+      if (immersiveMode) return 'immersive';
+      return 'instrument';
+    }
+    return 'workstation';
+  }, [route, immersiveMode]);
 
   const syncHash = useCallback(() => {
     const parsed = parseHash(window.location.hash);
-    setRoute(parsed.route);
+    setRoute(prevRoute => {
+      // When entering SOLARIUM from another workspace, activate compact instrument rail automatically
+      if (parsed.route === 'solarium' && prevRoute !== 'solarium') {
+        setInstrumentRailExpanded(false);
+      }
+      // When leaving SOLARIUM for another workspace, exit immersive mode and reset instrument rail override
+      if (parsed.route !== 'solarium' && prevRoute === 'solarium') {
+        setImmersiveModeState(false);
+        setInstrumentRailExpanded(false);
+      }
+      return parsed.route;
+    });
     setSpecimenId(parsed.specimenId);
     setSubId(parsed.subId ?? null);
+    setMobileNavOpen(false);
 
     if (parsed.specimenId) {
       setActiveSpecimenId(parsed.specimenId);
@@ -217,19 +286,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     window.addEventListener('hashchange', handleHashChange);
     window.addEventListener('popstate', handleHashChange);
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setActiveModal(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
       window.removeEventListener('popstate', handleHashChange);
-      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [syncHash]);
+
+  // Escape key handler: exits modal first, or exits SOLARIUM immersive mode without disrupting viewer
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (activeModal) {
+          setActiveModal(null);
+          return;
+        }
+        if (mobileNavOpen) {
+          setMobileNavOpen(false);
+          return;
+        }
+        if (immersiveMode) {
+          setImmersiveModeState(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeModal, mobileNavOpen, immersiveMode]);
 
   const navigate = useCallback((target: string) => {
     const formatted = target.startsWith('#')
@@ -281,8 +363,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     activePillar,
     expandedPillars,
     togglePillar,
+    navigationMode,
     railCollapsed,
     setRailCollapsed,
+    instrumentRailExpanded,
+    setInstrumentRailExpanded,
+    immersiveMode,
+    setImmersiveMode,
+    mobileNavOpen,
+    setMobileNavOpen,
     navigationHistory,
     activeTab,
     setActiveTab,
@@ -302,8 +391,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     activePillar,
     expandedPillars,
     togglePillar,
+    navigationMode,
     railCollapsed,
     setRailCollapsed,
+    instrumentRailExpanded,
+    immersiveMode,
+    setImmersiveMode,
+    mobileNavOpen,
     navigationHistory,
     activeTab,
     navigate,
@@ -315,13 +409,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     closeModal
   ]);
 
+  globalStore[GLOBAL_APP_VAL_KEY] = value;
+
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
 export function useApp(): AppContextValue {
   const ctx = useContext(AppContext);
-  if (!ctx) {
-    throw new Error('useApp must be used within an AppProvider');
+  if (ctx) {
+    return ctx;
   }
-  return ctx;
+  const fallback = globalStore[GLOBAL_APP_VAL_KEY] as AppContextValue | undefined;
+  if (fallback) {
+    return fallback;
+  }
+  throw new Error('useApp must be used within an AppProvider');
 }

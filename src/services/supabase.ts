@@ -25,14 +25,25 @@ import type {
   SpecimenCode,
 } from '../types';
 
-let supabaseClient: SupabaseClient | null = null;
+const GLOBAL_SUPABASE_KEY = '__CONSOL_SUPABASE_SINGLETON__';
+const globalSupabaseStore = globalThis as unknown as Record<string, unknown>;
+
+let supabaseClient: SupabaseClient | null =
+  (globalSupabaseStore[GLOBAL_SUPABASE_KEY] as SupabaseClient | undefined) || null;
 
 export function getSupabase(): SupabaseClient {
   if (supabaseClient) return supabaseClient;
   if (!config.SUPABASE_URL || !config.SUPABASE_KEY) {
     throw new Error('Supabase URL and Key are required to initialize client.');
   }
-  supabaseClient = createClient(config.SUPABASE_URL, config.SUPABASE_KEY);
+  supabaseClient = createClient(config.SUPABASE_URL, config.SUPABASE_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  });
+  globalSupabaseStore[GLOBAL_SUPABASE_KEY] = supabaseClient;
   return supabaseClient;
 }
 
@@ -42,6 +53,10 @@ function must<T>(result: { data: T | null; error: unknown }): T {
 }
 
 const urlCache = new Map<string, string>();
+
+export function clearSignedUrlCache(): void {
+  urlCache.clear();
+}
 
 /**
  * Generates signed URLs for storage assets using batching and caching.

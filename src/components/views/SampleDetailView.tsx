@@ -64,16 +64,13 @@ export const SampleDetailView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadSpecimen = React.useCallback((quiet = false) => {
     if (!specimenId) return;
-
-    let isMounted = true;
-    setLoading(true);
+    if (!quiet) setLoading(true);
     setError(null);
 
     api.sampleDetail(specimenId)
       .then(d => {
-        if (!isMounted) return;
         if (!d.sample) {
           setError(`No record exists for specimen ${specimenId}`);
         } else {
@@ -81,17 +78,21 @@ export const SampleDetailView: React.FC = () => {
         }
       })
       .catch(err => {
-        if (!isMounted) return;
         setError(err instanceof Error ? err.message : String(err));
       })
       .finally(() => {
-        if (isMounted) setLoading(false);
+        setLoading(false);
       });
-
-    return () => {
-      isMounted = false;
-    };
   }, [specimenId]);
+
+  useEffect(() => {
+    loadSpecimen(false);
+    const onRefresh = () => loadSpecimen(true);
+    window.addEventListener('consol:data-updated', onRefresh);
+    return () => {
+      window.removeEventListener('consol:data-updated', onRefresh);
+    };
+  }, [loadSpecimen]);
 
   if (!specimenId) {
     return (
@@ -160,13 +161,20 @@ export const SampleDetailView: React.FC = () => {
             >
               Open in The Lab
             </button>
-            <a
-              className="primary"
-              href={`?runtime=legacy#/samples/${encodeURIComponent(s.id)}`}
-              title="Open in legacy mode for field capture"
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => openModal('evidence', { sampleId: s.id, kind: 'visible' })}
             >
-              Field Capture Mode
-            </a>
+              ＋ Capture Evidence
+            </button>
+            <button
+              type="button"
+              className="primary"
+              onClick={() => openModal('import-csv', { sampleId: s.id })}
+            >
+              ＋ Attach pXRF
+            </button>
           </div>
         }
       />
@@ -322,6 +330,14 @@ export const SampleDetailView: React.FC = () => {
               ) : (
                 <div className="empty-state compact">
                   <p>No pXRF results attached to this specimen yet.</p>
+                  <button
+                    type="button"
+                    className="secondary"
+                    style={{ marginTop: 8 }}
+                    onClick={() => openModal('import-csv', { sampleId: s.id })}
+                  >
+                    Import Vanta data
+                  </button>
                 </div>
               )}
             </div>
@@ -419,6 +435,13 @@ export const SampleDetailView: React.FC = () => {
                         export hash.
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => openModal('import-csv', { sampleId: s.id })}
+                    >
+                      ＋ Add export
+                    </button>
                   </div>
 
                   <div className="reading-list">
@@ -461,6 +484,14 @@ export const SampleDetailView: React.FC = () => {
                 <div className="empty-state">
                   <h2>No pXRF attached</h2>
                   <p>Batch import Vanta CSV files matching this specimen ID.</p>
+                  <button
+                    type="button"
+                    className="primary"
+                    style={{ marginTop: 10 }}
+                    onClick={() => openModal('import-csv', { sampleId: s.id })}
+                  >
+                    Import Vanta CSV
+                  </button>
                 </div>
               )}
             </div>

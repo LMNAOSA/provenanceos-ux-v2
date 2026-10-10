@@ -1,10 +1,17 @@
 /**
- * CONSOL / SOLARIUM Light Box Workstation
+ * CONSOL / SOLARIUM Light Box Workstation (BUILD 01 & Master Directive Section 11)
  * Native React 19 integration of the authoritative restyled Three.js opal renderer.
- * 
- * Provides two operating modes:
- * 1. Explorer: Focused precision lighting study with interactive lamp direction/brightness/fill and chamber backgrounds.
- * 2. Research Laboratory: Exposes verified functional instrumentation (showInstruments=true, diagnostic modes, calibration rig).
+ *
+ * Capabilities:
+ * 1. Explorer & Research Laboratory environments (preserving ThreeOpalViewer, shaders, GLB, Draco, optical maps).
+ * 2. Adaptive Instrument UX (BUILD 01):
+ *    - Works with 60px collapsed Instrument Rail by default on #/solarium
+ *    - Provides explicit Expand / Collapse Navigation control
+ *    - Provides Immersive Full-Screen Mode toggle (hides rail completely, Escape or button to exit)
+ *    - Never unmounts or recreates the Three.js WebGL context when switching rail or immersive modes
+ * 3. Explicit Optical Observation Recording (Section 11):
+ *    - Changing visual sliders never silently creates a measurement
+ *    - Researchers can explicitly record an optical observation with parameters, actor, timestamp, and specimen ID
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -23,18 +30,55 @@ const defaultMaps = {
   domain: '/solarium/models/Matrixtwin_opal_domain_smooth.png'
 };
 
+export interface RecordedOpticalObservation {
+  id: string;
+  specimenId: string;
+  isReferenceModel: boolean;
+  azimuth: number;
+  elevation: number;
+  intensity: number;
+  ambient: number;
+  lampMode: 'camera' | 'fixed';
+  background: 'dark' | 'gray' | 'white';
+  environment: 'explorer' | 'laboratory';
+  note: string;
+  recordedAt: string;
+}
+
+const OPTICAL_OBS_STORAGE_KEY = 'consol.solarium.observations.v1';
+
+function loadSavedOpticalObservations(): RecordedOpticalObservation[] {
+  try {
+    if (typeof window === 'undefined') return [];
+    const raw = window.localStorage.getItem(OPTICAL_OBS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export interface SolariumPageProps {
   specimenId?: string | null;
   modelUrl?: string;
   opticalMaps?: { flash: string; domain: string };
   initialEnvironment?: 'explorer' | 'laboratory';
+  immersiveMode?: boolean;
+  onToggleImmersive?: (value: boolean) => void;
+  railCollapsed?: boolean;
+  onToggleRail?: () => void;
 }
 
 export const SolariumPage: React.FC<SolariumPageProps> = ({
   specimenId = null,
   modelUrl = '/solarium/models/Matrixtwin_opal.glb',
   opticalMaps = defaultMaps,
-  initialEnvironment = 'explorer'
+  initialEnvironment = 'explorer',
+  immersiveMode = false,
+  onToggleImmersive,
+  railCollapsed = true,
+  onToggleRail
 }) => {
   const viewer = useRef<ThreeOpalViewerRef>(null);
 
@@ -48,6 +92,13 @@ export const SolariumPage: React.FC<SolariumPageProps> = ({
   const [background, setBackground] = useState<'dark' | 'gray' | 'white'>('dark');
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
+  // Explicit Optical Observation capture (never triggered automatically by sliders)
+  const [observations, setObservations] = useState<RecordedOpticalObservation[]>(() =>
+    loadSavedOpticalObservations()
+  );
+  const [obsNote, setObsNote] = useState('');
+  const [obsSavedFeedback, setObsSavedFeedback] = useState<string | null>(null);
+
   const ready = useCallback(() => setStatus('ready'), []);
   const failed = useCallback(() => setStatus('error'), []);
 
@@ -57,6 +108,46 @@ export const SolariumPage: React.FC<SolariumPageProps> = ({
     setMode('camera');
     setBackground('dark');
     viewer.current?.resetView();
+  };
+
+  // Trigger a smooth resize notification when railCollapsed or immersiveMode changes
+  // without remounting ThreeOpalViewer
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [railCollapsed, immersiveMode]);
+
+  const handleRecordObservation = () => {
+    const targetSpecimen = specimenId || 'Specimen 01 (Matrixtwin Reference)';
+    const entry: RecordedOpticalObservation = {
+      id: `OPT-${Date.now().toString(36).toUpperCase()}`,
+      specimenId: targetSpecimen,
+      isReferenceModel: !specimenId,
+      azimuth: Math.round(light.azimuth),
+      elevation: Math.round(light.elevation),
+      intensity: enabled ? Math.round(light.intensity) : 0,
+      ambient: Math.round(light.ambient),
+      lampMode: mode,
+      background,
+      environment,
+      note: obsNote.trim() || 'Directional illumination observation',
+      recordedAt: new Date().toISOString()
+    };
+
+    const next = [entry, ...observations].slice(0, 25);
+    setObservations(next);
+    setObsNote('');
+    try {
+      window.localStorage.setItem(OPTICAL_OBS_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // ignore storage errors
+    }
+    setObsSavedFeedback(`Recorded ${entry.id} (${entry.azimuth}° az / ${entry.elevation}° el)`);
+    window.setTimeout(() => {
+      setObsSavedFeedback(prev => (prev?.includes(entry.id) ? null : prev));
+    }, 4000);
   };
 
   const snapshot = useRef({ light, enabled, mode, background, status });
@@ -151,57 +242,90 @@ export const SolariumPage: React.FC<SolariumPageProps> = ({
     : 'Demonstration optical study · Specimen 01 (Matrixtwin)';
 
   return (
-    <div className="solarium-workstation">
+    <div className={`solarium-workstation ${immersiveMode ? 'is-immersive' : ''}`}>
       <div className="solarium-container">
-        <header>
-          <div className="brand">
-            <span className="brandmark" aria-hidden="true">
-              ◈
-            </span>
+        {!immersiveMode && (
+          <header>
+            <div className="brand">
+              <img
+                src="/assets/SOLARIUM logo.svg"
+                alt="SOLARIUM"
+                className="solarium-logo-svg"
+              />
+              <div>
+                <span className="eyebrow">Optical studies · Light Box</span>
+              </div>
+            </div>
+
+            <div className="header-meta">
+              {onToggleRail && (
+                <button
+                  type="button"
+                  className="solarium-nav-btn"
+                  onClick={onToggleRail}
+                  aria-label={railCollapsed ? 'Expand Navigation' : 'Collapse Navigation'}
+                  title={
+                    railCollapsed
+                      ? 'Expand CONSOL Navigation Rail'
+                      : 'Collapse to 60px Instrument Rail'
+                  }
+                >
+                  {railCollapsed ? 'Expand Navigation' : 'Instrument Rail'}
+                </button>
+              )}
+
+              {onToggleImmersive && (
+                <button
+                  type="button"
+                  className="solarium-nav-btn"
+                  onClick={() => onToggleImmersive(true)}
+                  aria-label="Enter immersive full-screen instrument mode"
+                  title="Hide navigation and expand viewing chamber (Esc to exit)"
+                >
+                  Immersive View
+                </button>
+              )}
+
+              <div className="env-pills" role="radiogroup" aria-label="Environment Mode">
+                <button
+                  type="button"
+                  className={`env-pill ${environment === 'explorer' ? 'active' : ''}`}
+                  onClick={() => setEnvironment('explorer')}
+                >
+                  Explorer
+                </button>
+                <button
+                  type="button"
+                  className={`env-pill ${environment === 'laboratory' ? 'active' : ''}`}
+                  onClick={() => setEnvironment('laboratory')}
+                >
+                  Research Laboratory
+                </button>
+              </div>
+
+              <span className="specimen">
+                <span className="specimen-dot" /> {specimenLabel}
+              </span>
+            </div>
+          </header>
+        )}
+
+        {!immersiveMode && (
+          <div className="intro">
             <div>
-              <span className="eyebrow">Optical studies</span>
-              <h1>SOLARIUM Light Box</h1>
+              <p className="eyebrow">Light · Form · Colour</p>
+              <h2>Discover every flash.</h2>
+              <p className="intro-note">
+                {isSpecimenDemo
+                  ? 'Reference mineral geometry under calibrated directional illumination.'
+                  : `Interactive optical investigation for specimen ${specimenId} (using Specimen 01 reference geometry until SOLID twin is published).`}
+              </p>
             </div>
-          </div>
-
-          <div className="header-meta">
-            <div className="env-pills" role="radiogroup" aria-label="Environment Mode">
-              <button
-                type="button"
-                className={`env-pill ${environment === 'explorer' ? 'active' : ''}`}
-                onClick={() => setEnvironment('explorer')}
-              >
-                Explorer
-              </button>
-              <button
-                type="button"
-                className={`env-pill ${environment === 'laboratory' ? 'active' : ''}`}
-                onClick={() => setEnvironment('laboratory')}
-              >
-                Research Laboratory
-              </button>
-            </div>
-
-            <span className="specimen">
-              <span className="specimen-dot" /> {specimenLabel}
+            <span className="study-label">
+              {environment === 'explorer' ? 'Interactive lighting study' : 'Scientific Research Interface'}
             </span>
           </div>
-        </header>
-
-        <div className="intro">
-          <div>
-            <p className="eyebrow">Light · Form · Colour</p>
-            <h2>Discover every flash.</h2>
-            <p className="intro-note">
-              {isSpecimenDemo
-                ? 'Reference mineral geometry under calibrated directional illumination.'
-                : `Interactive optical investigation for specimen ${specimenId}.`}
-            </p>
-          </div>
-          <span className="study-label">
-            {environment === 'explorer' ? 'Interactive lighting study' : 'Scientific Research Interface'}
-          </span>
-        </div>
+        )}
 
         <div className="workspace">
           <section className={`stage ${background}`} aria-label="Opal viewing chamber">
@@ -239,16 +363,39 @@ export const SolariumPage: React.FC<SolariumPageProps> = ({
 
             <div className="stage-top">
               <span className="chamber-label">
-                <span className="eyebrow">{isSpecimenDemo ? 'Specimen 01' : specimenId}</span>
+                <span className="eyebrow">
+                  {isSpecimenDemo ? 'Specimen 01 · Reference' : `${specimenId} · Reference Geometry`}
+                </span>
                 Viewing chamber
               </span>
-              <button
-                type="button"
-                onClick={() => viewer.current?.resetView()}
-                aria-label="Reset camera view"
-              >
-                Reset view
-              </button>
+              <div className="stage-top-actions">
+                {immersiveMode && onToggleImmersive && (
+                  <button
+                    type="button"
+                    className="exit-immersive-btn"
+                    onClick={() => onToggleImmersive(false)}
+                    aria-label="Exit immersive mode"
+                  >
+                    Exit Immersive · Esc
+                  </button>
+                )}
+                {!immersiveMode && onToggleImmersive && (
+                  <button
+                    type="button"
+                    onClick={() => onToggleImmersive(true)}
+                    aria-label="Expand viewing chamber to immersive mode"
+                  >
+                    Full Chamber
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => viewer.current?.resetView()}
+                  aria-label="Reset camera view"
+                >
+                  Reset view
+                </button>
+              </div>
             </div>
 
             <div className="stage-bottom">
@@ -312,17 +459,46 @@ export const SolariumPage: React.FC<SolariumPageProps> = ({
               ))}
             </div>
 
+            <div className="divider" />
+            <h2 className="section-heading">Optical observation log</h2>
+            <div className="observation-capture">
+              <input
+                type="text"
+                className="observation-note-input"
+                placeholder="Observation note (e.g. green-blue flash at 30°)"
+                value={obsNote}
+                onChange={e => setObsNote(e.target.value)}
+                aria-label="Optical observation note"
+              />
+              <button
+                type="button"
+                className="record-observation-btn"
+                onClick={handleRecordObservation}
+              >
+                Record optical observation
+              </button>
+              {obsSavedFeedback && (
+                <p className="observation-feedback" role="status">
+                  {obsSavedFeedback}
+                </p>
+              )}
+            </div>
+
             <button type="button" className="reset" onClick={reset}>
               Reset light box
             </button>
-            <p className="note">Move the light to explore the stone’s green and blue flash.</p>
+            <p className="note">
+              Adjusting illumination does not automatically create a measurement. Use Record optical observation to log parameters.
+            </p>
           </aside>
         </div>
 
-        <footer>
-          <span>SOLARIUM · OPAL LIGHT BOX</span>
-          <span>Original geometry · Visual lighting study</span>
-        </footer>
+        {!immersiveMode && (
+          <footer>
+            <span>SOLARIUM · OPAL LIGHT BOX</span>
+            <span>Original geometry · Visual lighting study</span>
+          </footer>
+        )}
       </div>
     </div>
   );

@@ -481,15 +481,25 @@ export const NewSampleModal: React.FC<NewSampleModalProps> = ({ isOpen, onClose 
                 </button>
               )}
 
-              <label className="secondary file-label" style={{ cursor: 'pointer' }}>
+              <label
+                className="secondary file-label"
+                style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+              >
                 Choose media
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*,video/*"
+                  accept="image/*,video/*,.jpg,.jpeg,.png,.webp,.heic,.heif,.mp4,.mov,.webm"
                   multiple
-                  hidden
                   onChange={handleFileSelect}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0,
+                    cursor: 'pointer'
+                  }}
                 />
               </label>
             </div>

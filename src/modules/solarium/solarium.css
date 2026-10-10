@@ -728,3 +728,115 @@
     animation-duration: 3s;
   }
 }
+
+
+/* ============================================================
+   BUILD 01 — SOLARIUM Adaptive Instrument & Immersive Controls
+   ============================================================ */
+
+.solarium-workstation .header-meta {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.solarium-workstation .solarium-nav-btn {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: #d6e4e6;
+  font-size: 11px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.solarium-workstation .solarium-nav-btn:hover {
+  background: rgba(158, 230, 221, 0.12);
+  border-color: rgba(158, 230, 221, 0.38);
+  color: var(--aqua);
+}
+
+.solarium-workstation .stage-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.solarium-workstation .exit-immersive-btn {
+  border-color: rgba(158, 230, 221, 0.45) !important;
+  color: var(--aqua) !important;
+  background: rgba(10, 26, 32, 0.88) !important;
+}
+
+.solarium-workstation.is-immersive .solarium-container {
+  max-width: 100%;
+  padding: 16px 20px;
+}
+
+.solarium-workstation.is-immersive .workspace {
+  grid-template-columns: minmax(0, 1fr) 310px;
+  min-height: calc(100vh - 32px);
+}
+
+.solarium-workstation.is-immersive .stage {
+  min-height: calc(100vh - 32px);
+}
+
+.solarium-workstation .observation-capture {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.solarium-workstation .observation-note-input {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(12, 23, 29, 0.65);
+  color: var(--text);
+  font-size: 11px;
+}
+
+.solarium-workstation .observation-note-input::placeholder {
+  color: rgba(156, 169, 173, 0.72);
+}
+
+.solarium-workstation .record-observation-btn {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid rgba(158, 230, 221, 0.32);
+  border-radius: 10px;
+  background: rgba(158, 230, 221, 0.09);
+  color: var(--aqua);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.solarium-workstation .record-observation-btn:hover {
+  background: rgba(158, 230, 221, 0.18);
+  border-color: rgba(158, 230, 221, 0.55);
+}
+
+.solarium-workstation .observation-feedback {
+  margin: 2px 0 0;
+  font-size: 10px;
+  color: var(--aqua);
+  text-align: center;
+}
+
+.solarium-workstation .solarium-logo-svg {
+  width: 260.08500000000004px;
+  height: 49.9948px;
+  padding-right: 6px;
+  margin-left: -2px;
+  max-width: none;
+  display: block;
+}
+
+.solarium-workstation .brand .eyebrow {
+  margin: 0;
+}

@@ -10,10 +10,9 @@ import { useAuth } from '../../context/AuthContext';
 
 export const BrandHeader: React.FC = () => (
   <div className="brand">
-    <img src={config.APP_LOGO} alt="Australian Provenance Project" />
+    <img src={config.CONSOL_LOGO} alt="CONSOL" />
     <div className="system">
-      <img src={config.SYS_LOGO} alt="" />
-      <span>ProvenanceOS</span>
+      <img src={config.PROVOS_LOGO} alt="Provenance OS" />
     </div>
   </div>
 );

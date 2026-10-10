@@ -1,7 +1,8 @@
 /**
- * CONSOL Application Shell
- * Connects the persistent four-pillar navigation rail to native modular React views,
- * persistent specimen context, toast messaging, and modal dialogs.
+ * CONSOL Application Shell (BUILD 01)
+ * Connects the adaptive navigation rail (Normal Workstation, SOLARIUM Instrument Mode,
+ * and Immersive Full-Screen Instrument Mode) to modular React views, persistent specimen
+ * context, toast messaging, and native modal dialogs.
  */
 
 import React from 'react';
@@ -20,6 +21,8 @@ import { ModuleDirectoryView } from '../views/ModuleDirectoryView';
 import { NewSampleModal } from '../modals/NewSampleModal';
 import { EvidenceModal } from '../modals/EvidenceModal';
 import { TreatmentModal } from '../modals/TreatmentModal';
+import { VantaImportModal } from '../modals/VantaImportModal';
+import { HistoricalImportModal } from '../modals/HistoricalImportModal';
 import type { CaptureKind } from '../../types';
 
 const SolariumPage = React.lazy(() => import('../../modules/solarium/SolariumPage'));
@@ -29,7 +32,11 @@ export const Shell: React.FC = () => {
     route,
     specimenId,
     activeSpecimenId,
+    navigationMode,
     railCollapsed,
+    setRailCollapsed,
+    immersiveMode,
+    setImmersiveMode,
     toastState,
     activeModal,
     modalPayload,
@@ -71,7 +78,13 @@ export const Shell: React.FC = () => {
               </div>
             }
           >
-            <SolariumPage specimenId={solariumSpecimenId} />
+            <SolariumPage
+              specimenId={solariumSpecimenId}
+              immersiveMode={immersiveMode}
+              onToggleImmersive={setImmersiveMode}
+              railCollapsed={railCollapsed}
+              onToggleRail={() => setRailCollapsed(!railCollapsed)}
+            />
           </React.Suspense>
         );
       case 'xrf-inbox':
@@ -93,9 +106,20 @@ export const Shell: React.FC = () => {
 
   const evidencePayload = modalPayload as { sampleId?: string; kind?: CaptureKind } | null;
   const treatmentPayload = modalPayload as { sampleId?: string } | null;
+  const vantaImportPayload = modalPayload as { sampleId?: string | null } | null;
+  const historicalImportPayload = modalPayload as { preloadBundled2018?: boolean } | null;
+
+  const shellClasses = [
+    'shell',
+    railCollapsed ? 'rail-is-collapsed' : '',
+    route === 'solarium' ? 'in-solarium' : '',
+    immersiveMode && route === 'solarium' ? 'is-immersive-instrument' : ''
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div className={`shell ${railCollapsed ? 'rail-is-collapsed' : ''} ${route === 'solarium' ? 'in-solarium' : ''}`}>
+    <div className={shellClasses} data-nav-mode={navigationMode}>
       <Rail />
       <main className={`content ${route === 'solarium' ? 'content-solarium' : ''}`} id="content">
         {renderActiveView()}
@@ -110,7 +134,7 @@ export const Shell: React.FC = () => {
         {toastState.message}
       </div>
 
-      {/* Stage 5A Native Modals */}
+      {/* Native Operational Modals */}
       <NewSampleModal
         isOpen={activeModal === 'new-sample'}
         onClose={closeModal}
@@ -123,6 +147,7 @@ export const Shell: React.FC = () => {
         onClose={closeModal}
         onSuccess={() => {
           window.dispatchEvent(new Event('hashchange'));
+          window.dispatchEvent(new Event('consol:data-updated'));
         }}
       />
 
@@ -132,6 +157,27 @@ export const Shell: React.FC = () => {
         onClose={closeModal}
         onSuccess={() => {
           window.dispatchEvent(new Event('hashchange'));
+          window.dispatchEvent(new Event('consol:data-updated'));
+        }}
+      />
+
+      <VantaImportModal
+        isOpen={activeModal === 'import-csv'}
+        targetSpecimenId={vantaImportPayload?.sampleId || null}
+        onClose={closeModal}
+        onSuccess={() => {
+          window.dispatchEvent(new Event('hashchange'));
+          window.dispatchEvent(new Event('consol:data-updated'));
+        }}
+      />
+
+      <HistoricalImportModal
+        isOpen={activeModal === 'import-history'}
+        preloadBundled2018={Boolean(historicalImportPayload?.preloadBundled2018)}
+        onClose={closeModal}
+        onSuccess={() => {
+          window.dispatchEvent(new Event('hashchange'));
+          window.dispatchEvent(new Event('consol:data-updated'));
         }}
       />
     </div>

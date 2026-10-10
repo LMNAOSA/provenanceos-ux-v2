@@ -1,9 +1,13 @@
 {
   "framework": "vite",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/((?!assets/|solarium/|supabase/|config\\.js|vanta\\.js|app\\.js|styles\\.css|field-guide\\.pdf).*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
