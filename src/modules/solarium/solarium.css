@@ -1,0 +1,730 @@
+/**
+ * CONSOL / SOLARIUM Scoped Stylesheet
+ * 100% scoped to .solarium-workstation to prevent global style leakage.
+ */
+
+.solarium-workstation {
+  --text: #f2f5f4;
+  --muted: #9ca9ad;
+  --aqua: #9ee6dd;
+  --line: rgba(255, 255, 255, 0.12);
+  --glass: linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025));
+  font-family: "Avenir Next", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+  color: #f2f5f4;
+  background: radial-gradient(ellipse at 18% 0%, #17323b 0%, #081116 44%, #05090c 100%);
+  color-scheme: dark;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.solarium-workstation * {
+  box-sizing: border-box;
+}
+
+.solarium-workstation button,
+.solarium-workstation input,
+.solarium-workstation select {
+  font: inherit;
+}
+
+.solarium-workstation button,
+.solarium-workstation select {
+  cursor: pointer;
+}
+
+.solarium-workstation button {
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.solarium-workstation button:focus-visible,
+.solarium-workstation input:focus-visible,
+.solarium-workstation select:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: 5px;
+}
+
+.solarium-workstation .solarium-container {
+  max-width: 1600px;
+  margin: auto;
+  padding: 0 48px;
+}
+
+.solarium-workstation header {
+  min-height: 112px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.solarium-workstation .brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.solarium-workstation .brandmark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(158, 230, 221, 0.25);
+  border-radius: 15px;
+  background: var(--glass);
+  color: var(--aqua);
+  font-size: 31px;
+  box-shadow: 0 0 30px rgba(158, 230, 221, 0.06);
+}
+
+.solarium-workstation .eyebrow {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.solarium-workstation h1 {
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  margin: 0;
+  color: var(--text);
+}
+
+.solarium-workstation .brand .eyebrow {
+  font-size: 9px;
+  margin-bottom: 5px;
+}
+
+.solarium-workstation .header-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.solarium-workstation .env-pills {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.solarium-workstation .env-pill {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  transition: all 0.2s;
+}
+
+.solarium-workstation .env-pill.active {
+  background: var(--glass);
+  color: var(--aqua);
+  border: 1px solid rgba(158, 230, 221, 0.3);
+  box-shadow: 0 0 15px rgba(158, 230, 221, 0.08);
+}
+
+.solarium-workstation .specimen {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: #bdcccf;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.solarium-workstation .specimen-dot {
+  width: 5px;
+  height: 5px;
+  background: var(--aqua);
+  border-radius: 50%;
+}
+
+.solarium-workstation .intro {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 34px 0 28px;
+}
+
+.solarium-workstation .intro h2 {
+  font-size: clamp(32px, 3.2vw, 46px);
+  line-height: 1.12;
+  font-weight: 300;
+  letter-spacing: -0.045em;
+  margin: 0;
+  color: var(--text);
+}
+
+.solarium-workstation .intro-note {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.solarium-workstation .study-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9ca9ad;
+  padding-bottom: 3px;
+}
+
+.solarium-workstation .workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.solarium-workstation .workspace > * {
+  min-width: 0;
+}
+
+.solarium-workstation .stage {
+  min-height: 660px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.3);
+  transition: background 0.2s;
+}
+
+.solarium-workstation .stage.dark {
+  background: #020304;
+}
+
+.solarium-workstation .stage.gray {
+  background: #777d81;
+}
+
+.solarium-workstation .stage.white {
+  background: #eeeff0;
+}
+
+.solarium-workstation .opal-viewer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.solarium-workstation .opal-viewer canvas {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  inset: 0;
+  cursor: grab;
+  touch-action: none;
+}
+
+.solarium-workstation .opal-viewer canvas:active {
+  cursor: grabbing;
+}
+
+.solarium-workstation .stage-top,
+.solarium-workstation .stage-bottom {
+  position: absolute;
+  left: 26px;
+  right: 26px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  pointer-events: none;
+  color: #b9c8cd;
+  font-size: 11px;
+  z-index: 5;
+}
+
+.solarium-workstation .stage-top {
+  top: 26px;
+}
+
+.solarium-workstation .stage-bottom {
+  bottom: 24px;
+}
+
+.solarium-workstation .chamber-label {
+  font-size: 13px;
+}
+
+.solarium-workstation .chamber-label .eyebrow {
+  font-size: 9px;
+  margin-bottom: 6px;
+}
+
+.solarium-workstation .stage-top button {
+  pointer-events: auto;
+  border: 1px solid var(--line);
+  background: rgba(12, 23, 29, 0.72);
+  backdrop-filter: blur(18px);
+  color: #e0e8e8;
+  border-radius: 999px;
+  padding: 11px 16px;
+  font-size: 11px;
+}
+
+.solarium-workstation .stage-top button:hover {
+  background: #243b42;
+  border-color: rgba(158, 230, 221, 0.4);
+}
+
+.solarium-workstation .stage.white .stage-top,
+.solarium-workstation .stage.white .stage-bottom,
+.solarium-workstation .stage.white .eyebrow {
+  color: #414d54;
+}
+
+.solarium-workstation .stage.gray .stage-top,
+.solarium-workstation .stage.gray .stage-bottom,
+.solarium-workstation .stage.gray .eyebrow {
+  color: #fff;
+  text-shadow: 0 1px 3px #0008;
+}
+
+.solarium-workstation .lamp-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.solarium-workstation .lamp-status i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #9ca9ad;
+}
+
+.solarium-workstation .lamp-status.is-on i {
+  background: #8ee0b2;
+  box-shadow: 0 0 13px rgba(142, 224, 178, 0.6);
+}
+
+.solarium-workstation .stage.white .lamp-status.is-on i {
+  background: #297950;
+}
+
+.solarium-workstation aside {
+  padding: 28px 26px;
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  background: var(--glass);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.25);
+}
+
+.solarium-workstation .panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.solarium-workstation h2 {
+  font-weight: 300;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+  margin: 0;
+  color: var(--text);
+}
+
+.solarium-workstation .toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #c9d9d9;
+  cursor: pointer;
+}
+
+.solarium-workstation .toggle input {
+  appearance: none;
+  width: 32px;
+  height: 19px;
+  margin: 0;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid #829294;
+  background: #18262c;
+  cursor: pointer;
+}
+
+.solarium-workstation .toggle input::before {
+  content: '';
+  display: block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #9ca9ad;
+  transition: transform 0.2s;
+}
+
+.solarium-workstation .toggle input:checked {
+  background: rgba(158, 230, 221, 0.18);
+  border-color: #79b5af;
+}
+
+.solarium-workstation .toggle input:checked::before {
+  background: var(--aqua);
+  transform: translateX(13px);
+}
+
+.solarium-workstation .slider {
+  display: block;
+  margin-bottom: 23px;
+}
+
+.solarium-workstation .slider > span {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #b9c6c9;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.solarium-workstation .slider output {
+  min-width: 43px;
+  text-align: right;
+  color: #e2f1ed;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.solarium-workstation .slider input {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 22px;
+  margin: 0;
+  cursor: pointer;
+  background: transparent;
+}
+
+.solarium-workstation .slider input::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 99px;
+  background: linear-gradient(to right, #9acfc8 var(--range-fill), rgba(255, 255, 255, 0.12) var(--range-fill));
+}
+
+.solarium-workstation .slider input::-moz-range-track {
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.solarium-workstation .slider input::-moz-range-progress {
+  height: 3px;
+  background: #9acfc8;
+}
+
+.solarium-workstation .slider input::-webkit-slider-thumb {
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  margin-top: -5px;
+  border: 2px solid #d2eeea;
+  border-radius: 50%;
+  background: #a2d6ce;
+  box-shadow: 0 0 14px rgba(158, 230, 221, 0.25);
+}
+
+.solarium-workstation .slider input::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #d2eeea;
+  border-radius: 50%;
+  background: #a2d6ce;
+}
+
+.solarium-workstation .select-label {
+  display: block;
+  font-size: 12px;
+  color: #b9c6c9;
+}
+
+.solarium-workstation .select-label select {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 11px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #17272e;
+  color: #e0e8e8;
+  font-size: 12px;
+}
+
+.solarium-workstation .divider {
+  height: 1px;
+  background: var(--line);
+  margin: 25px 0 22px;
+}
+
+.solarium-workstation .section-heading {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.solarium-workstation .swatches {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.solarium-workstation .swatch {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 3px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: #b9c6c9;
+  background: rgba(255, 255, 255, 0.025);
+  font-size: 11px;
+}
+
+.solarium-workstation .swatch::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  margin-right: 6px;
+  background: #020304;
+}
+
+.solarium-workstation .swatch.gray::before {
+  background: #777d81;
+}
+
+.solarium-workstation .swatch.white::before {
+  background: #eeeff0;
+}
+
+.solarium-workstation .swatch.selected {
+  border-color: rgba(158, 230, 221, 0.65);
+  color: var(--aqua);
+  background: rgba(158, 230, 221, 0.075);
+}
+
+.solarium-workstation .swatch:hover {
+  border-color: rgba(158, 230, 221, 0.5);
+}
+
+.solarium-workstation .reset {
+  width: 100%;
+  min-height: 45px;
+  margin-top: 26px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.19), rgba(255, 255, 255, 0.06));
+  color: #f2f5f4;
+  font-size: 12px;
+  box-shadow: 0 0 30px rgba(145, 230, 220, 0.05);
+}
+
+.solarium-workstation .reset:hover {
+  background: rgba(158, 230, 221, 0.17);
+  border-color: rgba(158, 230, 221, 0.45);
+}
+
+.solarium-workstation .note {
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin: 17px 0 0;
+  text-align: center;
+}
+
+.solarium-workstation footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 24px 0 28px;
+  color: #9ca9ad;
+  font-size: 10px;
+}
+
+.solarium-workstation footer > span:first-child {
+  letter-spacing: 0.16em;
+}
+
+.solarium-workstation .status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 28px;
+  background: #0b171d;
+  color: #cbd9dc;
+  font-size: 14px;
+  z-index: 10;
+}
+
+.solarium-workstation .status button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #243b42;
+  color: var(--text);
+  padding: 12px 24px;
+}
+
+.solarium-workstation .spinner {
+  width: 26px;
+  height: 26px;
+  border: 1px solid #3b4947;
+  border-top-color: var(--aqua);
+  border-radius: 50%;
+  animation: solarium-spin 1s linear infinite;
+}
+
+@keyframes solarium-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (min-width: 1500px) {
+  .solarium-workstation .stage {
+    min-height: 720px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .solarium-workstation .solarium-container {
+    padding: 0 24px;
+  }
+  .solarium-workstation .workspace {
+    grid-template-columns: minmax(0, 1fr) 290px;
+    gap: 16px;
+  }
+  .solarium-workstation aside {
+    padding: 24px 20px;
+  }
+  .solarium-workstation .stage-top,
+  .solarium-workstation .stage-bottom {
+    left: 20px;
+    right: 20px;
+  }
+  .solarium-workstation .study-label {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .solarium-workstation .solarium-container {
+    padding: 0 16px;
+  }
+  .solarium-workstation header {
+    min-height: 88px;
+    gap: 10px;
+  }
+  .solarium-workstation .brand {
+    gap: 10px;
+  }
+  .solarium-workstation .brandmark {
+    width: 38px;
+    height: 38px;
+    font-size: 25px;
+    border-radius: 12px;
+  }
+  .solarium-workstation h1 {
+    font-size: 19px;
+  }
+  .solarium-workstation .specimen {
+    font-size: 9px;
+    padding: 8px 10px;
+  }
+  .solarium-workstation .specimen-dot {
+    display: none;
+  }
+  .solarium-workstation .intro {
+    padding: 28px 2px 24px;
+  }
+  .solarium-workstation .intro-note {
+    font-size: 12px;
+  }
+  .solarium-workstation .workspace {
+    grid-template-columns: 1fr;
+  }
+  .solarium-workstation .stage {
+    height: 58svh;
+    min-height: 380px;
+    max-height: 640px;
+    border-radius: 22px;
+  }
+  .solarium-workstation .stage-top {
+    top: 20px;
+  }
+  .solarium-workstation .stage-bottom {
+    bottom: 20px;
+    font-size: 10px;
+  }
+  .solarium-workstation aside {
+    padding: 26px;
+    border-radius: 22px;
+  }
+  .solarium-workstation .slider {
+    margin-bottom: 24px;
+  }
+  .solarium-workstation .slider input {
+    height: 28px;
+  }
+  .solarium-workstation .slider input::-webkit-slider-thumb {
+    width: 17px;
+    height: 17px;
+    margin-top: -7px;
+  }
+  .solarium-workstation .slider input::-moz-range-thumb {
+    width: 13px;
+    height: 13px;
+  }
+  .solarium-workstation .toggle {
+    min-height: 44px;
+  }
+  .solarium-workstation .panel-heading {
+    margin-bottom: 26px;
+  }
+  .solarium-workstation footer {
+    flex-wrap: wrap;
+    font-size: 9px;
+    gap: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solarium-workstation *,
+  .solarium-workstation *::before {
+    transition: none !important;
+  }
+  .solarium-workstation .spinner {
+    animation-duration: 3s;
+  }
+}

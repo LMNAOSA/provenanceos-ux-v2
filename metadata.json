@@ -1,0 +1,8 @@
+{
+  "name": "ProvenanceOS UX V2",
+  "description": "A field-first specimen registry for Andamooka material, pXRF evidence and visual capture.",
+  "prompt": "ProvenanceOS UX V2 - Australian Provenance Project field specimen registry for Andamooka material, pXRF evidence and visual capture",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
