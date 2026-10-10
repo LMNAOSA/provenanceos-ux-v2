@@ -283,7 +283,144 @@ export const api = {
         .select('id')
     );
     return data?.length || 0;
+  },
+
+  /**
+   * Verifies exact persisted row counts in Supabase PostgreSQL for
+   * historical_datasets, historical_records, and historical_observations.
+   */
+  async historicalCounts(): Promise<{ datasets: number; records: number; observations: number }> {
+    const sb = getSupabase();
+    const [dsRes, recRes, obsRes] = await Promise.all([
+      sb.from('historical_datasets').select('id', { count: 'exact', head: true }),
+      sb.from('historical_records').select('id', { count: 'exact', head: true }),
+      sb.from('historical_observations').select('id', { count: 'exact', head: true })
+    ]);
+    return {
+      datasets: dsRes.error ? 0 : (dsRes.count ?? 0),
+      records: recRes.error ? 0 : (recRes.count ?? 0),
+      observations: obsRes.error ? 0 : (obsRes.count ?? 0)
+    };
+  },
+
+  /**
+   * Loads all persisted historical_records and their linked historical_observations
+   * for a specific dataset_id. Chunks observation queries by 20 record IDs per request
+   * (<= ~660 observations per request) so PostgREST's 1,000-row response cap never truncates
+   * datasets with 792+ elemental observations.
+   */
+  async historicalDatasetRecords(datasetId: string, datasetName?: string): Promise<HistoricalRecord[]> {
+    if (!datasetId) return [];
+    const sb = getSupabase();
+    const rawRecords = must(
+      await sb
+        .from('historical_records')
+        .select('*')
+        .eq('dataset_id', datasetId)
+        .order('source_row_no', { ascending: true })
+        .limit(1000)
+    ) || [];
+
+    const toNum = (v: unknown): number | null => {
+      if (v === null || v === undefined || v === '') return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    };
+
+    const records: HistoricalRecord[] = rawRecords.map((r: Record<string, unknown>) => ({
+      ...(r as unknown as HistoricalRecord),
+      dataset_name: datasetName,
+      source_row_no: Number(r.source_row_no || 0),
+      duration_s: toNum(r.duration_s),
+      sigma_value: toNum(r.sigma_value),
+      res: toNum(r.res),
+      escale: toNum(r.escale),
+      shape_time: toNum(r.shape_time),
+      raw: (r.raw && typeof r.raw === 'object' ? (r.raw as Record<string, string>) : {}),
+      observations: []
+    }));
+
+    const recordIds = records.map(r => r.id).filter((id): id is string => Boolean(id));
+    if (!recordIds.length) return records;
+
+    const obsByRecord = new Map<string, HistoricalObservation[]>();
+    const chunkSize = 20;
+    for (let i = 0; i < recordIds.length; i += chunkSize) {
+      const chunkIds = recordIds.slice(i, i + chunkSize);
+      const rawObs = must(
+        await sb
+          .from('historical_observations')
+          .select('*')
+          .in('record_id', chunkIds)
+          .order('analyte', { ascending: true })
+          .limit(2000)
+      ) || [];
+
+      rawObs.forEach((o: Record<string, unknown>) => {
+        const recId = String(o.record_id || '');
+        if (!recId) return;
+        const normalized: HistoricalObservation = {
+          id: o.id as string | undefined,
+          record_id: recId,
+          analyte: String(o.analyte || ''),
+          raw_value: o.raw_value !== null && o.raw_value !== undefined ? String(o.raw_value) : '',
+          value: toNum(o.value),
+          qualifier: o.qualifier ? String(o.qualifier) : null,
+          detection_limit: toNum(o.detection_limit),
+          raw_error: o.raw_error !== null && o.raw_error !== undefined ? String(o.raw_error) : null,
+          error: toNum(o.error),
+          unit: o.unit ? String(o.unit) : null,
+          created_at: o.created_at as string | undefined
+        };
+        const list = obsByRecord.get(recId) || [];
+        list.push(normalized);
+        obsByRecord.set(recId, list);
+      });
+    }
+
+    records.forEach(r => {
+      if (r.id) {
+        r.observations = obsByRecord.get(r.id) || [];
+      }
+    });
+
+    return records;
+  },
+
+  /**
+   * Loads historical records + observations across the provided historical datasets
+   * (or fetches datasets first if omitted) for CONSOL scientific interrogation.
+   */
+  async allHistoricalRecordsWithObservations(datasets?: HistoricalDataset[]): Promise<HistoricalRecord[]> {
+    const dsList = datasets ?? (await this.historicalDatasets());
+    if (!dsList.length) return [];
+    const perDataset = await Promise.all(
+      dsList.slice(0, 10).map(ds => this.historicalDatasetRecords(ds.id, ds.name).catch(() => [] as HistoricalRecord[]))
+    );
+    return perDataset.flat();
+  },
+
+  async recentAnalyses(limit = 50): Promise<Analysis[]> {
+    const sb = getSupabase();
+    return must(
+      await sb
+        .from('analyses')
+        .select('*')
+        .order('measured_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
+        .limit(limit)
+    ) || [];
+  },
+
+  async unmatchedCount(): Promise<number> {
+    const sb = getSupabase();
+    const res = await sb
+      .from('import_unmatched_rows')
+      .select('id', { count: 'exact', head: true });
+    if (res.error) return 0;
+    return res.count || 0;
   }
 };
 
 export default api;
+

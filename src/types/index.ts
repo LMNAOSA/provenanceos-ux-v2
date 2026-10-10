@@ -239,9 +239,16 @@ export interface HistoricalDataset {
   };
 }
 
+export interface HistoricalDatabaseCounts {
+  datasets: number;
+  records: number;
+  observations: number;
+}
+
 export interface HistoricalRecord {
   id?: string;
   dataset_id?: string;
+  dataset_name?: string;
   source_row_no: number;
   original_index?: string | null;
   location?: string | null;

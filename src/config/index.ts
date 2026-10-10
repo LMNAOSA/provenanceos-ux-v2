@@ -34,11 +34,13 @@ export const config = {
     env?.VITE_RAW_BUCKET ||
     windowConfig?.RAW_BUCKET ||
     'vanta-raw',
-  APP_LOGO: '/assets/CONSOL logo.svg',
-  CONSOL_LOGO: '/assets/CONSOL logo.svg',
+  APP_LOGO: '/assets/CONSOL logo_icon.svg',
+  CONSOL_LOGO: '/assets/CONSOL logo_icon.svg',
   SYS_LOGO: '/assets/ProvOS logo.svg',
   PROVOS_LOGO: '/assets/ProvOS logo.svg',
   SOLARIUM_LOGO: '/assets/SOLARIUM logo.svg',
+  SOLORIGIN_LOGO: '/assets/SOLORIGIN logo.svg',
+  SOLOPTICS_LOGO: '/assets/SOLOPTICS logo.svg',
   PARSER_VERSION: 'pxrf-v2.0.0',
   HISTORICAL_PARSER_VERSION: 'historical-soil-v1.0.0',
   DEFAULT_LOCATION: 'Andamooka, South Australia',

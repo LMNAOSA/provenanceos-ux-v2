@@ -151,7 +151,7 @@ export const Rail: React.FC = () => {
 
   const activeRouteKey = route === 'sample' ? 'samples' : route;
   const currentRouteMeta = APP_ROUTES.find(r => r.id === activeRouteKey);
-  const currentSectionTitle = currentRouteMeta?.name || 'Workbench';
+  const currentSectionTitle = currentRouteMeta?.name || 'CONSOL';
 
   const handleModuleClick = (moduleRoute: string, hash: string | null) => {
     if (!hash) return;
@@ -294,19 +294,19 @@ export const Rail: React.FC = () => {
 
       {/* Desktop / Tablet Primary Navigation */}
       <nav className="pillar-nav desktop-pillar-nav" aria-label="Primary">
-        {/* Workbench Entry */}
+        {/* CONSOL Primary Command Centre Entry */}
         <button
           type="button"
           className={`rail-item-btn workbench-btn ${route === 'home' ? 'is-active' : ''}`}
           aria-current={route === 'home' ? 'page' : undefined}
           onClick={() => navigate('#/home')}
-          title="Workbench"
-          aria-label="Workbench"
+          title="CONSOL Command Centre"
+          aria-label="CONSOL"
         >
           <span className="rail-icon">
             <IconHouse />
           </span>
-          {!railCollapsed && <span className="rail-label">Workbench</span>}
+          {!railCollapsed && <span className="rail-label">CONSOL</span>}
         </button>
 
         <div className="rail-divider" role="separator" />
@@ -434,7 +434,7 @@ export const Rail: React.FC = () => {
               }}
             >
               <IconHouse />
-              <span>Workbench</span>
+              <span>CONSOL</span>
             </button>
           </div>
 

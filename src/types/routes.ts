@@ -275,7 +275,7 @@ export interface RouteItem {
 }
 
 export const APP_ROUTES: RouteItem[] = [
-  { id: 'home', name: 'Workbench', slug: 'home', hash: '#/home' },
+  { id: 'home', name: 'CONSOL', slug: 'home', hash: '#/home' },
   { id: 'samples', name: 'Specimens', slug: 'samples', hash: '#/samples', pillar: 'COLLECTION' },
   { id: 'xrf-inbox', name: 'XRF Inbox', slug: 'xrf-inbox', hash: '#/xrf-inbox', pillar: 'COLLECTION' },
   { id: 'evidence', name: 'Evidence', slug: 'evidence', hash: '#/evidence', pillar: 'COLLECTION' },
@@ -373,7 +373,7 @@ export function parseHash(hash: string): ParsedRoute {
   if (first === 'provenance') return { route: 'provenance', specimenId: null, subId: null, hash };
   if (first === 'modules') return { route: 'modules', specimenId: null, subId: null, hash };
   if (first === 'settings') return { route: 'settings', specimenId: null, subId: null, hash };
-  if (first === 'home' || first === 'workbench') {
+  if (first === 'home' || first === 'consol' || first === 'workbench') {
     return { route: 'home', specimenId: null, subId: null, hash: '#/home' };
   }
 

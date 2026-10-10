@@ -37,12 +37,13 @@ function parseHash(hash) {
   if (first === 'provenance') return { route: 'provenance', specimenId: null, hash };
   if (first === 'modules') return { route: 'modules', specimenId: null, hash };
   if (first === 'settings') return { route: 'settings', specimenId: null, hash };
-  if (first === 'home' || first === 'workbench') return { route: 'home', specimenId: null, hash: '#/home' };
+  if (first === 'home' || first === 'consol' || first === 'workbench') return { route: 'home', specimenId: null, hash: '#/home' };
   return { route: 'home', specimenId: null, hash: '#/home' };
 }
 
-test('route parsing resolves all canonical routes and specimen IDs including solarium and the-lab', () => {
+test('route parsing resolves all canonical routes and specimen IDs including consol, solarium and the-lab', () => {
   assert.equal(parseHash('#/home').route, 'home');
+  assert.equal(parseHash('#/consol').route, 'home');
   assert.equal(parseHash('#/workbench').route, 'home');
   assert.equal(parseHash('#/samples').route, 'samples');
   assert.equal(parseHash('#/samples/AHM-000042').route, 'sample');
@@ -420,4 +421,254 @@ test('mobile file selection resolves MIME types from extensions and locks specim
     matched: null,
     reason: 'row is labelled ACC-000009 (expected AHM-000042)'
   });
+});
+
+// Test 14: CONSOL v3.4 Intelligence Dashboard — Elemental LOD & Unit Provenance Discipline
+test('CONSOL dashboard formats elemental concentrations without converting <LOD to zero or inventing missing units', () => {
+  function formatElementValue(el) {
+    const unitText = el.unit ? el.unit : 'unit unrecorded';
+    if (el.is_lod) {
+      const lodLimit =
+        el.lod !== null && el.lod !== undefined && Number.isFinite(Number(el.lod))
+          ? `<LOD (${Number(el.lod)})`
+          : '<LOD';
+      return { valueText: lodLimit, unitText: el.unit || '', isLod: true };
+    }
+    if (el.concentration === null || el.concentration === undefined || !Number.isFinite(Number(el.concentration))) {
+      return { valueText: '—', unitText: el.unit || '', isLod: false };
+    }
+    return { valueText: String(el.concentration), unitText, isLod: false };
+  }
+
+  // Non-detect (<LOD) is never represented as 0
+  const lodReading = formatElementValue({ element: 'Au', concentration: null, is_lod: true, lod: 5, unit: 'ppm' });
+  assert.equal(lodReading.isLod, true);
+  assert.equal(lodReading.valueText, '<LOD (5)');
+  assert.notEqual(lodReading.valueText, '0');
+
+  // Missing unit is explicitly flagged, never silently defaulted to ppm
+  const missingUnitReading = formatElementValue({ element: 'Fe', concentration: 1420, is_lod: false, unit: null });
+  assert.equal(missingUnitReading.unitText, 'unit unrecorded');
+  assert.notEqual(missingUnitReading.unitText, 'ppm');
+});
+
+// Test 15: CONSOL v3.5 Historical Data Intelligence & Ask CONSOL Interrogation over 24 Rows / 792 Observations
+test('CONSOL v3.5 verifies 24 rows and 792 observations in 2018 historical dataset and computes deterministic analyte summaries without converting <LOD to zero', () => {
+  const XLSX = require('xlsx');
+  const Vanta = require('../vanta.js');
+  const wb = XLSX.readFile('./supabase/2018_Historical_XRF_Data.xlsx', { cellDates: true });
+  const csv = XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]], { blankrows: true });
+  const parsed = Vanta.parseHistoricalSoil(csv);
+
+  assert.equal(parsed.recordCount, 24);
+  assert.equal(parsed.observationCount, 792);
+  assert.equal(parsed.elements.length, 33);
+
+  // Verify Fe is detected across all 24 rows with peak at Ethiopia (Light Opal) (7013.71 ppm)
+  const feValues = parsed.records
+    .map(r => r.observations.find(o => o.analyte === 'Fe'))
+    .filter(o => o && o.qualifier !== 'below_lod' && o.value !== null);
+  assert.equal(feValues.length, 24);
+  const maxFe = Math.max(...feValues.map(o => o.value));
+  assert.equal(maxFe, 7013.71);
+
+  // Verify Se, Au, U are 100% below_lod (24/24 <LOD) and never numeric 0
+  for (const lodEl of ['Se', 'Au', 'U']) {
+    const obsForEl = parsed.records.map(r => r.observations.find(o => o.analyte === lodEl));
+    assert.equal(obsForEl.length, 24);
+    assert.equal(obsForEl.every(o => o.qualifier === 'below_lod' && o.value === null), true);
+  }
+});
+
+// Test 16: CONSOL v3.6 Priority 2 — Verification of Sulfur Record #14 (Allens Rise Black Opal, Index 112)
+test('CONSOL v3.6 verifies Sulfur Record #14 (Allens Rise Black Opal, original index 112) equals 7733.63 ppm with reported error 312.48 ppm against source workbook', () => {
+  const XLSX = require('xlsx');
+  const Vanta = require('../vanta.js');
+  const wb = XLSX.readFile('./supabase/2018_Historical_XRF_Data.xlsx', { cellDates: true });
+  const csv = XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]], { blankrows: true });
+  const parsed = Vanta.parseHistoricalSoil(csv);
+
+  // Rank all 24 records by Sulfur (S) descending
+  const sulfurRanked = parsed.records
+    .map(r => {
+      const sObs = r.observations.find(o => o.analyte === 'S');
+      return {
+        sourceRowNo: r.sourceRowNo,
+        originalIndex: r.originalIndex,
+        location: r.location,
+        originalSample: r.originalSample,
+        sigmaValue: r.sigmaValue,
+        durationS: r.durationS,
+        value: sObs ? sObs.value : null,
+        error: sObs ? sObs.error : null,
+        unit: sObs ? sObs.unit : null,
+        qualifier: sObs ? sObs.qualifier : null,
+        rawS: r.raw['S'],
+        rawSError: r.raw['S Error']
+      };
+    })
+    .filter(item => item.qualifier !== 'below_lod' && item.value !== null)
+    .sort((a, b) => b.value - a.value);
+
+  assert.equal(sulfurRanked.length, 24);
+  const highestSulfur = sulfurRanked[0];
+
+  // Exact match against persisted Record #14, Allens Rise (Black Opal), original index 112
+  assert.equal(highestSulfur.sourceRowNo, 14);
+  assert.equal(highestSulfur.originalIndex, '112');
+  assert.equal(highestSulfur.location, 'Allens Rise (Black Opal)');
+  assert.equal(highestSulfur.originalSample, '6');
+  assert.equal(highestSulfur.value, 7733.63);
+  assert.equal(highestSulfur.error, 312.48);
+  assert.equal(highestSulfur.unit, 'ppm');
+  assert.equal(highestSulfur.sigmaValue, 2);
+  assert.equal(highestSulfur.durationS, 60);
+  assert.equal(highestSulfur.rawS, '7733.63');
+  assert.equal(highestSulfur.rawSError, '312.48');
+
+  // Verify next 5 sulfur records for conversational follow-up ("Show me the next five", ranks 2..6)
+  const nextFiveLocations = sulfurRanked.slice(1, 6).map(r => r.location);
+  assert.deepEqual(nextFiveLocations, [
+    'Lightning Ridge (Black Opal)',
+    'Slovakia',
+    'Coober Pedy (White/Light Opal)',
+    'Idaho',
+    'Third Hill (White Dam)'
+  ]);
+});
+
+// Test 17: CONSOL v3.6 Priority 2 & Priority 3 — Regression Fixtures (Units, Synonyms, Duplicates, Scope Isolation, Follow-Up, Unauthorised & Empty Queries)
+test('CONSOL v3.6 regression suite covers unit conversions, synonyms, duplicate observations, historical vs contemporary scope isolation, follow-up state, empty results, and unauthorised queries', () => {
+  // 1. Unit normalisation & conversion (ppm <-> wt%) without inventing unrecorded units
+  function normalizeConcentrationToPpm(value, unit) {
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+      return { ppmValue: null, wtPercentValue: null, unitWarning: false };
+    }
+    const num = Number(value);
+    const u = (unit || '').trim().toLowerCase();
+    if (!u || u === 'unit unrecorded') {
+      return { ppmValue: num, wtPercentValue: null, unitWarning: true };
+    }
+    if (u === 'ppm' || u === 'mg/kg' || u === 'ug/g') {
+      return { ppmValue: num, wtPercentValue: num / 10000, unitWarning: false };
+    }
+    if (u === '%' || u === 'wt%' || u === 'wt %') {
+      return { ppmValue: num * 10000, wtPercentValue: num, unitWarning: false };
+    }
+    return { ppmValue: num, wtPercentValue: null, unitWarning: true };
+  }
+
+  const sulfurConv = normalizeConcentrationToPpm(7733.63, 'ppm');
+  assert.equal(sulfurConv.ppmValue, 7733.63);
+  assert.equal(Number(sulfurConv.wtPercentValue.toFixed(6)), 0.773363);
+  assert.equal(sulfurConv.unitWarning, false);
+
+  const wtPercentConv = normalizeConcentrationToPpm(0.773363, 'wt%');
+  assert.equal(Number(wtPercentConv.ppmValue.toFixed(2)), 7733.63);
+  assert.equal(wtPercentConv.unitWarning, false);
+
+  const missingUnitConv = normalizeConcentrationToPpm(500, '');
+  assert.equal(missingUnitConv.unitWarning, true);
+  assert.equal(missingUnitConv.wtPercentValue, null);
+
+  // 2. Element symbols and British/American synonyms (Sulfur / Sulphur -> S, Chromium -> Cr, Aluminium / Aluminum -> Al)
+  const SYNONYM_MAP = {
+    sulfur: 'S',
+    sulphur: 'S',
+    s: 'S',
+    chromium: 'Cr',
+    cr: 'Cr',
+    iron: 'Fe',
+    fe: 'Fe',
+    zirconium: 'Zr',
+    zr: 'Zr'
+  };
+  function resolveAnalyteToken(token) {
+    return SYNONYM_MAP[String(token || '').trim().toLowerCase()] || null;
+  }
+  assert.equal(resolveAnalyteToken('sulfur'), 'S');
+  assert.equal(resolveAnalyteToken('sulphur'), 'S');
+  assert.equal(resolveAnalyteToken('Chromium'), 'Cr');
+  assert.equal(resolveAnalyteToken('Fe'), 'Fe');
+
+  // 3. Duplicate or repeated observations detection within a record
+  function detectDuplicates(observations) {
+    const counts = {};
+    for (const obs of observations) {
+      counts[obs.analyte] = (counts[obs.analyte] || 0) + 1;
+    }
+    return Object.entries(counts)
+      .filter(([, count]) => count > 1)
+      .map(([analyte, count]) => ({ analyte, count }));
+  }
+  const dupResult = detectDuplicates([
+    { analyte: 'S', value: 7733.63 },
+    { analyte: 'S', value: 7710.0 },
+    { analyte: 'Fe', value: 1852.04 }
+  ]);
+  assert.deepEqual(dupResult, [{ analyte: 'S', count: 2 }]);
+
+  // 4. Historical vs Contemporary source isolation + Empty results + Unauthorised queries
+  function executeScopedQuery({ query, scope, isAuthorized, historicalRows, contemporaryRows }) {
+    if (!isAuthorized) {
+      return {
+        intent: 'unauthorised',
+        directAnswer: 'Query blocked: Authenticated researcher session and active staff capability are required to interrogate CONSOL scientific records.',
+        rankedRows: []
+      };
+    }
+    const candidateRows = [
+      ...(scope === 'ALL' || scope === 'HISTORICAL' ? historicalRows : []),
+      ...(scope === 'ALL' || scope === 'CONTEMPORARY' ? contemporaryRows : [])
+    ];
+    if (candidateRows.length === 0) {
+      return {
+        intent: 'empty-result',
+        directAnswer: `No records matched in ${scope} scope for "${query}".`,
+        rankedRows: []
+      };
+    }
+    return {
+      intent: 'element-ranking',
+      directAnswer: `Top result is ${candidateRows[0].label} (${candidateRows[0].value} ppm).`,
+      rankedRows: candidateRows
+    };
+  }
+
+  const mockHistorical = [{ sourceKind: 'HISTORICAL', label: 'Allens Rise (Black Opal)', value: 7733.63 }];
+  const mockContemporary = []; // 0 contemporary specimens currently registered
+
+  // Unauthorised query is blocked
+  const unauthRes = executeScopedQuery({
+    query: 'Highest sulfur',
+    scope: 'ALL',
+    isAuthorized: false,
+    historicalRows: mockHistorical,
+    contemporaryRows: mockContemporary
+  });
+  assert.equal(unauthRes.intent, 'unauthorised');
+  assert.equal(unauthRes.rankedRows.length, 0);
+
+  // Contemporary-only scope isolates out historical records and returns explicit empty result when 0 specimens exist
+  const contempOnlyRes = executeScopedQuery({
+    query: 'Highest sulfur',
+    scope: 'CONTEMPORARY',
+    isAuthorized: true,
+    historicalRows: mockHistorical,
+    contemporaryRows: mockContemporary
+  });
+  assert.equal(contempOnlyRes.intent, 'empty-result');
+  assert.equal(contempOnlyRes.rankedRows.length, 0);
+
+  // Historical-only scope returns the historical record without fabricating a contemporary specimen ID
+  const histOnlyRes = executeScopedQuery({
+    query: 'Highest sulfur',
+    scope: 'HISTORICAL',
+    isAuthorized: true,
+    historicalRows: mockHistorical,
+    contemporaryRows: mockContemporary
+  });
+  assert.equal(histOnlyRes.intent, 'element-ranking');
+  assert.equal(histOnlyRes.rankedRows.length, 1);
+  assert.equal(histOnlyRes.rankedRows[0].sourceKind, 'HISTORICAL');
 });

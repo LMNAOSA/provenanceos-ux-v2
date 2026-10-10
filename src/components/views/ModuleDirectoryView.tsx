@@ -29,7 +29,7 @@ export const ModuleDirectoryView: React.FC = () => {
             className="secondary"
             onClick={() => navigate('#/home')}
           >
-            ← Back to Workbench
+            ← Back to CONSOL
           </button>
         }
       />

@@ -1631,3 +1631,2496 @@ button.event:hover{background:rgba(255,255,255,.06)}
     background: rgba(158, 230, 221, 0.1);
   }
 }
+
+
+/* ============================================================
+   CONSOL v3.4 — SCIENTIFIC INTELLIGENCE & COMMAND CENTRE
+   High-density trading-terminal clarity + Jony Ive restraint
+   ============================================================ */
+
+.consol-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.consol-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.consol-kicker-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.consol-sync-stamp {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: #7c8d92;
+}
+
+.consol-title {
+  font-size: 36px;
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  margin: 8px 0 6px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+}
+
+.consol-hero-logo {
+  height: 36px;
+  width: auto;
+  max-width: 240px;
+  display: block;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.consol-subtitle {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+  max-width: 720px;
+}
+
+.consol-command-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.consol-action-btn {
+  padding: 9px 14px;
+  font-size: 12.5px;
+  border-radius: 8px;
+}
+
+/* Global Command & Search Bar */
+.consol-command-bar {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.15fr) minmax(280px, 0.85fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(6, 13, 17, 0.72);
+}
+
+.consol-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.consol-search-wrap:focus-within {
+  border-color: rgba(158, 230, 221, 0.45);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.consol-search-glyph {
+  color: #7e8e93;
+  font-size: 14px;
+  user-select: none;
+}
+
+.consol-search-input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 12.5px;
+  outline: none;
+}
+
+.consol-search-input::placeholder {
+  color: #6b7b80;
+}
+
+.consol-search-clear {
+  border: 0;
+  background: transparent;
+  color: var(--aqua);
+  font-size: 11px;
+  padding: 2px 6px;
+}
+
+.consol-active-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.consol-active-context-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.consol-context-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #7d8d92;
+}
+
+.consol-context-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--aqua);
+}
+
+.consol-context-sub,
+.consol-context-unpinned {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.consol-active-context-btns {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.consol-mini-btn {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: #c8d5d8;
+  font-size: 11px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: border-color 0.14s, color 0.14s, background 0.14s;
+}
+
+.consol-mini-btn:hover {
+  border-color: rgba(158, 230, 221, 0.42);
+  color: #ffffff;
+  background: rgba(158, 230, 221, 0.08);
+}
+
+.consol-mini-btn.quiet {
+  border-color: transparent;
+  background: transparent;
+  color: #7e8d92;
+}
+
+/* 6-Cell Authoritative Telemetry Ribbon */
+.consol-telemetry-ribbon {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(7, 14, 18, 0.68);
+  overflow: hidden;
+}
+
+.consol-ribbon-cell {
+  padding: 12px 14px;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.consol-ribbon-cell:last-child {
+  border-right: 0;
+}
+
+.consol-ribbon-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.consol-ribbon-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: #829297;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.consol-ribbon-link {
+  border: 0;
+  background: transparent;
+  color: var(--aqua);
+  font-size: 10.5px;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.consol-ribbon-link:hover {
+  text-decoration: underline;
+}
+
+.consol-ribbon-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 23px;
+  font-weight: 400;
+  color: var(--text);
+  margin: 5px 0 4px;
+  line-height: 1.1;
+}
+
+.consol-ribbon-breakdown {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 10.5px;
+  color: #748489;
+}
+
+/* Main Terminal Grid */
+.consol-terminal-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.85fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.consol-primary-terminal {
+  padding: 18px;
+  border-radius: 12px;
+}
+
+.consol-terminal-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.consol-terminal-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.consol-tab-btn {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #89989d;
+  font-size: 12.5px;
+  padding: 6px 11px;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.14s, background 0.14s, border-color 0.14s;
+}
+
+.consol-tab-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.consol-tab-btn.active {
+  color: #ffffff;
+  font-weight: 500;
+  background: rgba(158, 230, 221, 0.08);
+  border-color: rgba(158, 230, 221, 0.32);
+}
+
+.consol-filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.consol-segmented-group {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.consol-seg-btn {
+  border: 0;
+  background: transparent;
+  color: #87969b;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.consol-seg-btn:hover {
+  color: var(--text);
+}
+
+.consol-seg-btn.active {
+  background: rgba(255, 255, 255, 0.11);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.consol-status-select {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  color: #cfd8da;
+  font-size: 11.5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  outline: none;
+}
+
+/* High-Density Scientific Data Tables */
+.consol-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.consol-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  text-align: left;
+}
+
+.consol-table th {
+  padding: 8px 10px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: #7c8c91;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.consol-table th.num,
+.consol-table td.num {
+  text-align: right;
+}
+
+.consol-table th.actions-col,
+.consol-table td.actions-col {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.consol-th-sort {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.consol-th-sort:hover {
+  color: var(--text);
+}
+
+.consol-tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.consol-tr:hover {
+  background: rgba(255, 255, 255, 0.032);
+}
+
+.consol-tr.is-selected {
+  background: rgba(158, 230, 221, 0.055);
+}
+
+.consol-tr td {
+  padding: 9px 10px;
+  vertical-align: middle;
+  color: #d8e2e4;
+}
+
+.mono-cell {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.consol-id-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.consol-id-cell strong {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.consol-pin-indicator {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--aqua);
+}
+
+.consol-class-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--aqua);
+}
+
+.consol-cell-sub {
+  display: block;
+  font-size: 10.5px;
+  color: #748489;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.consol-location-text {
+  display: block;
+  font-size: 12px;
+  color: #cfd8da;
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.consol-inline-elements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+
+.consol-el-pair {
+  color: #c7d4d7;
+  white-space: nowrap;
+}
+
+.consol-el-pair b {
+  color: var(--aqua);
+  font-weight: 500;
+}
+
+.consol-el-pair.is-lod {
+  color: #6f7f84;
+}
+
+.consol-el-pair.is-lod b {
+  color: #839398;
+}
+
+.consol-muted-dash {
+  font-size: 11px;
+  color: #65757a;
+}
+
+.consol-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.consol-row-btn {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.025);
+  color: #b8c6c9;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.consol-row-btn:hover {
+  color: #ffffff;
+  border-color: rgba(158, 230, 221, 0.42);
+  background: rgba(158, 230, 221, 0.08);
+}
+
+.consol-subtable-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.consol-subtable-head h4 {
+  margin: 4px 0 0;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.consol-empty-inline {
+  padding: 14px 4px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* Right Column: Contextual Inspector, Lab Monitor & Provenance Stream */
+.consol-side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.consol-inspector-card,
+.consol-side-card {
+  padding: 16px 18px;
+  border-radius: 12px;
+}
+
+.consol-inspector-summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.consol-inspector-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+}
+
+.consol-inspector-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.consol-inspector-line strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.consol-inspector-meta small {
+  display: block;
+  font-size: 11px;
+  color: #7c8c91;
+  margin-top: 3px;
+}
+
+.consol-inspector-pxrf {
+  margin-top: 12px;
+}
+
+.consol-inspector-subhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #829297;
+  margin-bottom: 8px;
+}
+
+.consol-el-mini-table-wrap {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.consol-el-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+
+.consol-el-mini-table th {
+  padding: 6px 8px;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #728287;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  text-align: left;
+}
+
+.consol-el-mini-table th.num,
+.consol-el-mini-table td.num {
+  text-align: right;
+}
+
+.consol-el-mini-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #d4dfe1;
+}
+
+.consol-el-mini-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.consol-el-mini-table tr.is-lod td {
+  color: #6d7d82;
+}
+
+.consol-inspector-empty-pxrf {
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.16);
+  font-size: 11.5px;
+  color: #79898e;
+}
+
+.consol-inspector-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.consol-inspector-actions .consol-mini-btn {
+  text-align: center;
+  padding: 6px 8px;
+}
+
+/* Lab Investigations Monitor */
+.consol-inv-list {
+  display: grid;
+  gap: 6px;
+}
+
+.consol-inv-row {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  padding: 9px 11px;
+  text-align: left;
+  color: inherit;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.consol-inv-row:hover {
+  border-color: rgba(158, 230, 221, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.consol-inv-main {
+  min-width: 0;
+}
+
+.consol-inv-main strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.consol-inv-main small {
+  display: block;
+  font-size: 11px;
+  color: #79898e;
+  margin-top: 2px;
+}
+
+.consol-inv-arrow {
+  color: #6d7d82;
+  font-size: 12px;
+}
+
+/* Provenance Stream */
+.consol-event-filters {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.consol-stream-list {
+  display: grid;
+  gap: 5px;
+  max-height: 310px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.consol-stream-item {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.018);
+  border-radius: 7px;
+  padding: 8px 10px;
+  text-align: left;
+  color: inherit;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.consol-stream-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(158, 230, 221, 0.3);
+}
+
+.consol-stream-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+}
+
+.consol-stream-top strong {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.consol-stream-kind {
+  color: var(--aqua);
+  font-size: 11px;
+}
+
+.consol-stream-top time {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: #6c7c81;
+}
+
+.consol-stream-detail {
+  display: block;
+  font-size: 11px;
+  color: #7d8d92;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Four-Pillar Command Matrix */
+.consol-pillar-matrix {
+  display: grid;
+  gap: 8px;
+}
+
+.consol-matrix-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.consol-matrix-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.consol-matrix-pillar {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: #829297;
+  flex: none;
+}
+
+.consol-matrix-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+  font-size: 11.5px;
+  color: #67777c;
+}
+
+.consol-matrix-links button {
+  border: 0;
+  background: transparent;
+  color: #c5d3d6;
+  font-size: 11.5px;
+  padding: 0;
+}
+
+.consol-matrix-links button:hover {
+  color: var(--aqua);
+  text-decoration: underline;
+}
+
+/* Responsive Terminal Adaptations */
+@media (max-width: 1280px) {
+  .consol-telemetry-ribbon {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .consol-ribbon-cell:nth-child(3) {
+    border-right: 0;
+  }
+  .consol-ribbon-cell:nth-child(-n+3) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .consol-terminal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 950px) {
+  .consol-command-bar {
+    grid-template-columns: 1fr;
+  }
+  .consol-active-context {
+    padding-left: 0;
+    padding-top: 8px;
+    border-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .consol-telemetry-ribbon {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .consol-ribbon-cell {
+    border-right: 1px solid rgba(255, 255, 255, 0.07) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .consol-telemetry-ribbon {
+    grid-template-columns: 1fr;
+  }
+  .consol-title {
+    font-size: 28px;
+  }
+  .consol-command-actions {
+    width: 100%;
+  }
+  .consol-action-btn {
+    flex: 1;
+    text-align: center;
+  }
+}
+
+
+/* ============================================================
+   CONSOL v3.5 — HISTORICAL DATA INTELLIGENCE & ASK CONSOL
+   ============================================================ */
+
+.consol-ask-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.consol-ask-badge {
+  position: absolute;
+  left: 10px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: rgba(158, 230, 221, 0.14);
+  border: 1px solid rgba(158, 230, 221, 0.35);
+  color: #a9efe5;
+  pointer-events: none;
+}
+
+.consol-ask-column .consol-search-input {
+  padding-left: 104px;
+}
+
+.consol-ask-presets {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.consol-preset-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #7c8c91;
+  margin-right: 2px;
+}
+
+.consol-preset-chip {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.025);
+  color: #9fb0b5;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.consol-preset-chip:hover {
+  color: #e2ecef;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.consol-preset-chip.active {
+  color: #9ee6dd;
+  border-color: rgba(158, 230, 221, 0.45);
+  background: rgba(158, 230, 221, 0.1);
+}
+
+/* Ask CONSOL Interrogation Result Panel */
+.consol-interrogation-panel {
+  margin-bottom: 14px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(158, 230, 221, 0.28);
+  background: linear-gradient(180deg, rgba(16, 28, 31, 0.94), rgba(11, 18, 21, 0.96));
+}
+
+.consol-interrogation-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.consol-interrogation-kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.consol-interrogation-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #eef6f7;
+}
+
+.consol-verdict-list {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #cbd8dc;
+}
+
+.consol-interrogation-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.consol-interrogation-stat-card {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.24);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.consol-interrogation-stat-card:hover {
+  border-color: rgba(158, 230, 221, 0.36);
+  background: rgba(158, 230, 221, 0.05);
+}
+
+.consol-stat-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.consol-stat-card-top span {
+  font-size: 10.5px;
+  color: #829297;
+}
+
+.consol-stat-card-metrics {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: #b7c8cc;
+}
+
+/* Historical Data Explorer */
+.hist-explorer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hist-provenance-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.hist-provenance-kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.hist-verified-badge {
+  font-size: 10.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(158, 230, 221, 0.1);
+  border: 1px solid rgba(158, 230, 221, 0.28);
+  color: #9ee6dd;
+}
+
+.hist-dataset-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hist-dataset-title-row h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.hist-dataset-meta-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: #86969b;
+}
+
+.hist-submode-tabs {
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.hist-filter-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hist-search-box {
+  position: relative;
+  flex: 1 1 320px;
+  display: flex;
+  align-items: center;
+}
+
+.hist-local-search {
+  padding-left: 12px;
+}
+
+.hist-filter-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hist-select-label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+}
+
+.hist-select-label > span {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #7c8c91;
+}
+
+.hist-analyte-callout {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(158, 230, 221, 0.26);
+  background: rgba(158, 230, 221, 0.05);
+}
+
+.hist-analyte-callout-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hist-analyte-callout-head h5 {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #e6f2f4;
+}
+
+.hist-analyte-callout-stats {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #b7c8cc;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.hist-clickable-el {
+  cursor: pointer;
+}
+
+.hist-clickable-el:hover,
+.hist-clickable-el.is-focused {
+  border-color: rgba(158, 230, 221, 0.5);
+  background: rgba(158, 230, 221, 0.14);
+}
+
+.hist-ambiguous-tag {
+  color: #d9b675 !important;
+}
+
+.hist-records-split {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hist-row-detail-panel {
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.hist-row-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.hist-row-detail-head h4 {
+  margin: 2px 0 4px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.hist-row-detail-head small {
+  color: #849499;
+  font-size: 11.5px;
+}
+
+.hist-row-detail-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hist-obs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 6px;
+}
+
+.hist-obs-cell {
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.025);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.hist-obs-cell:hover,
+.hist-obs-cell.is-focused {
+  border-color: rgba(158, 230, 221, 0.45);
+  background: rgba(158, 230, 221, 0.08);
+}
+
+.hist-obs-cell.is-lod {
+  opacity: 0.65;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.hist-obs-cell-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11.5px;
+}
+
+.hist-obs-cell-top span {
+  font-size: 10px;
+  color: #7c8c91;
+}
+
+.hist-obs-cell-val {
+  font-size: 13px;
+  font-weight: 500;
+  color: #e4eef0;
+}
+
+.hist-obs-cell.is-lod .hist-obs-cell-val {
+  color: #7c8c91;
+  font-weight: 400;
+}
+
+.hist-obs-cell-sub {
+  font-size: 10px;
+  color: #748489;
+}
+
+.hist-raw-json-box {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.hist-raw-kv-grid {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 6px;
+}
+
+.hist-raw-kv {
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.hist-raw-kv span {
+  color: #7c8c91;
+}
+
+.hist-compare-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hist-compare-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hist-compare-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.consol-row-btn.is-active {
+  color: #9ee6dd;
+  border-color: rgba(158, 230, 221, 0.45);
+  background: rgba(158, 230, 221, 0.12);
+}
+
+
+/* ============================================================
+   CONSOL v3.7 — JONY IVE PRECISION REDUCTION & DEPLOYABLE PANELS
+   ============================================================ */
+
+.consol-dashboard {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.consol-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 0;
+}
+
+.consol-header-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.consol-quiet-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: #8c9ea3;
+}
+
+.consol-inline-sync {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: #9fb2b7;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.consol-inline-sync:hover {
+  color: var(--aqua);
+}
+
+/* Primary Interrogation Instrument (Ask CONSOL) */
+.consol-ask-hero {
+  padding: 24px 26px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(15, 22, 25, 0.72);
+}
+
+.consol-ask-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.consol-ask-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.consol-instrument-heading {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #f0f7f8;
+}
+
+.consol-quiet-context {
+  font-size: 12px;
+  color: #93a7ac;
+}
+
+.consol-scope-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.consol-ask-form {
+  margin-bottom: 12px;
+}
+
+.consol-ask-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.consol-ask-main-input {
+  flex: 1;
+  font-size: 15px;
+  padding: 13px 16px 13px 38px;
+  color: #f4fafa;
+  background: rgba(0, 0, 0, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  transition: border-color 0.15s ease;
+}
+
+.consol-ask-main-input:focus {
+  border-color: rgba(158, 230, 221, 0.6);
+  outline: none;
+}
+
+.consol-ask-submit-btn {
+  padding: 12px 20px;
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.consol-ask-footer-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.consol-quiet-toggle {
+  align-self: flex-start;
+  background: transparent;
+  border: 0;
+  padding: 2px 0;
+  font-size: 12px;
+  color: #8b9da2;
+  cursor: pointer;
+  transition: color 0.14s ease;
+}
+
+.consol-quiet-toggle:hover {
+  color: #e4eff1;
+}
+
+/* Answer-First Direct Scientific Result Card */
+.consol-answer-first-container {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.consol-answer-direct-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.consol-answer-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.consol-answer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.consol-inspect-source-btn {
+  padding: 7px 14px;
+  font-size: 12.5px;
+}
+
+.consol-direct-answer-text {
+  margin: 0;
+  font-size: 16.5px;
+  line-height: 1.55;
+  font-weight: 400;
+  color: #f4fafa;
+  letter-spacing: -0.005em;
+  max-width: 78ch;
+}
+
+.consol-answer-evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 16px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+@media (max-width: 980px) {
+  .consol-answer-evidence-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.consol-answer-evidence-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.consol-evidence-cell-label {
+  font-size: 11px;
+  color: #87999e;
+}
+
+.consol-evidence-cell-primary {
+  font-size: 21px;
+  font-weight: 600;
+  color: #a9efe5;
+  line-height: 1.25;
+}
+
+.consol-evidence-cell-id,
+.consol-evidence-cell-dataset {
+  font-size: 14px;
+  font-weight: 500;
+  color: #eaf3f5;
+  line-height: 1.35;
+}
+
+.consol-evidence-cell-sub {
+  font-size: 11.5px;
+  color: #8ea0a5;
+  line-height: 1.35;
+}
+
+.consol-followup-chips-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.consol-expandable-toggles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.consol-qualifications-block {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.consol-qualifications-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #9fb1b6;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.consol-ranking-pagination-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 11.5px;
+  color: #9cb0b5;
+}
+
+/* Deployable Workspace Modules Launcher Strip */
+.consol-launcher-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.consol-launcher-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.consol-launcher-title {
+  font-size: 12px;
+  color: #83959a;
+}
+
+.consol-launcher-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 10px;
+}
+
+.consol-launcher-tile {
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 22, 25, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.consol-launcher-tile:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(22, 32, 36, 0.75);
+}
+
+.consol-launcher-tile.is-deployed {
+  border-color: rgba(158, 230, 221, 0.48);
+  background: rgba(158, 230, 221, 0.07);
+}
+
+.consol-launcher-tile-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.consol-launcher-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #d4e2e5;
+}
+
+.consol-launcher-action {
+  font-size: 11px;
+  color: #829499;
+}
+
+.consol-launcher-tile.is-deployed .consol-launcher-action {
+  color: #a9efe5;
+}
+
+.consol-launcher-metric {
+  font-size: 18px;
+  font-weight: 600;
+  color: #f2f8f9;
+  line-height: 1.2;
+}
+
+.consol-launcher-sub {
+  font-size: 11px;
+  color: #7e9095;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Deployed Workspace Panels Stack */
+.consol-deployed-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.consol-deployed-panel {
+  padding: 22px 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(14, 21, 24, 0.8);
+}
+
+.consol-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.consol-panel-header h3 {
+  margin: 2px 0 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #eef6f7;
+}
+
+/* Analytical Concentration Chart */
+.consol-analytical-chart {
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.consol-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.consol-chart-head small {
+  font-size: 11px;
+  color: #829499;
+}
+
+.consol-chart-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.consol-chart-row {
+  display: grid;
+  grid-template-columns: 220px 1fr 180px;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.consol-chart-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+@media (max-width: 760px) {
+  .consol-chart-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.consol-chart-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.consol-chart-label small {
+  font-size: 10px;
+  color: #7c8e93;
+}
+
+.consol-chart-bar-track {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.consol-chart-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: rgba(158, 230, 221, 0.8);
+}
+
+.consol-chart-lod-tag {
+  font-size: 11px;
+  color: #76888d;
+}
+
+.consol-chart-val {
+  text-align: right;
+  font-size: 12px;
+  color: #dce8ea;
+}
+
+.consol-chart-val small {
+  color: #84969b;
+}
+
+.consol-chart-sec-val {
+  font-size: 10.5px;
+  color: #9cb0b5;
+}
+
+/* Priority 4: Team Intelligence Inbox */
+.consol-question-composer {
+  margin-top: 10px;
+  margin-bottom: 12px;
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.consol-composer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.consol-composer-input {
+  padding-left: 10px !important;
+  font-size: 12px;
+}
+
+.consol-composer-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.consol-composer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.consol-question-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.consol-question-item {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.consol-question-head {
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.consol-question-head:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.consol-question-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.consol-q-status {
+  font-size: 11px;
+  color: #a9efe5;
+  font-weight: 500;
+}
+
+.consol-q-status.status-under-review,
+.consol-q-status.status-needs-verification {
+  color: #ebd09a;
+}
+
+.consol-q-status.status-resolved {
+  color: #95a6ab;
+}
+
+.consol-q-assignee {
+  font-size: 11px;
+  color: #93a5aa;
+}
+
+.consol-q-link-chip {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #d0e2e5;
+}
+
+.consol-q-body-preview {
+  margin: 4px 0;
+  font-size: 12.5px;
+  color: #b8c7cb;
+  line-height: 1.45;
+}
+
+.consol-q-meta {
+  font-size: 11px;
+  color: #7c8e93;
+}
+
+.consol-question-expanded {
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.consol-q-citation {
+  font-size: 11.5px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #a7bac0;
+}
+
+.consol-q-status-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: #8c9ea3;
+}
+
+.consol-q-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.consol-q-reply-row {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 11.5px;
+}
+
+.consol-q-reply-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: #8ea0a5;
+  margin-bottom: 3px;
+}
+
+.consol-q-reply-row p {
+  margin: 0;
+  color: #d8e5e8;
+}
+
+/* ============================================================
+   CONSOL v3.8 — MOBILE OPTIMISATION & FIELD ERGONOMICS AUDIT
+   ============================================================ */
+
+/* Touch momentum & horizontal scroll containment for scientific tables */
+.consol-table-wrap,
+.consol-el-mini-table-wrap,
+.tabs,
+.chips,
+.hist-submode-tabs {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+/* Prevent horizontal viewport overflow across all views */
+html,
+body,
+#app,
+.shell,
+.content {
+  max-width: 100vw;
+  overflow-x: clip;
+}
+
+@media (max-width: 950px) {
+  /* Sticky mobile navigation header with iOS safe-area support */
+  .pillar-rail,
+  .pillar-rail.is-collapsed {
+    position: sticky;
+    top: 0;
+    z-index: 45;
+    padding: max(10px, env(safe-area-inset-top)) 14px 10px;
+    background: rgba(6, 12, 16, 0.94);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  /* Touch-ergonomic mobile header controls (40px+ tap targets) */
+  .mobile-menu-trigger {
+    min-height: 38px;
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  .mobile-specimen-pill {
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+  }
+
+  .mobile-drawer-item {
+    min-height: 44px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+  }
+
+  .mobile-drawer-modules {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .mobile-drawer-mod-btn {
+    min-height: 42px;
+    padding: 8px 12px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Proportional Specimen Stage height on tablets & phones */
+  .specimen-stage,
+  .stage-empty {
+    min-height: 300px;
+    max-height: 420px;
+  }
+
+  /* Scrollable tabs without clipping */
+  .tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 18px;
+    padding-bottom: 2px;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabs button {
+    white-space: nowrap;
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Prevent iOS Safari auto-zoom on form focus (requires >= 16px font-size) */
+  .consol-ask-main-input,
+  .consol-search-input,
+  .consol-status-select,
+  .consol-composer-input,
+  .consol-composer-textarea,
+  .field input,
+  .field select,
+  .field textarea,
+  .lab-search-input,
+  .lab-inline-form input,
+  .lab-lifecycle-select select {
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Maximise horizontal screen real estate on phones */
+  .content {
+    padding: 14px 12px calc(36px + env(safe-area-inset-bottom));
+  }
+
+  .consol-dashboard {
+    gap: 16px;
+  }
+
+  /* Avoid duplicate brand logo right below the mobile compact header bar */
+  .consol-header {
+    gap: 12px;
+    padding-bottom: 12px;
+  }
+
+  .consol-header .consol-title {
+    display: none;
+  }
+
+  .consol-quiet-meta {
+    font-size: 11.5px;
+    gap: 6px;
+  }
+
+  .consol-command-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+  }
+
+  .consol-action-btn {
+    padding: 9px 6px;
+    font-size: 11.5px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Ask CONSOL Mobile Hero & Input Ergonomics */
+  .consol-ask-hero {
+    padding: 16px 14px;
+    border-radius: 10px;
+  }
+
+  .consol-ask-hero-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .consol-scope-selector {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .consol-scope-selector .consol-seg-btn {
+    min-height: 36px;
+    font-size: 11.5px;
+    text-align: center;
+  }
+
+  /* Stack input and Interrogate button cleanly on narrow viewports */
+  .consol-ask-input-wrap {
+    flex-wrap: wrap;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .consol-ask-main-input {
+    padding: 10px 12px;
+    min-width: 0;
+    width: calc(100% - 28px);
+  }
+
+  .consol-ask-submit-btn {
+    width: 100%;
+    min-height: 42px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* Touch-friendly Example Queries & Follow-up Chips */
+  .consol-ask-presets,
+  .consol-followup-chips-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .consol-ask-presets::-webkit-scrollbar,
+  .consol-followup-chips-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .consol-preset-chip {
+    flex: none;
+    min-height: 34px;
+    padding: 6px 11px;
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
+
+  /* Answer-First Direct Result Card Mobile Layout */
+  .consol-answer-card-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .consol-answer-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+  }
+
+  .consol-inspect-source-btn {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 42px;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .consol-direct-answer-text {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .consol-answer-evidence-grid {
+    gap: 12px;
+    padding: 12px 0;
+  }
+
+  .consol-evidence-cell-primary {
+    font-size: 18px;
+  }
+
+  /* 2-Column Grid for Expandable Evidence Drawers */
+  .consol-expandable-toggles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+  }
+
+  .consol-expandable-toggles .consol-row-btn {
+    min-height: 38px;
+    padding: 6px 8px;
+    font-size: 11px;
+    text-align: center;
+    justify-content: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 2-Column Tactical Grid for Workspace Module Launchers (instead of 7 tall single-column rows) */
+  .consol-launcher-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .consol-launcher-tile {
+    padding: 11px 12px;
+    min-height: 76px;
+  }
+
+  .consol-launcher-label {
+    font-size: 11.5px;
+  }
+
+  .consol-launcher-metric {
+    font-size: 16px;
+  }
+
+  .consol-launcher-sub {
+    font-size: 10px;
+  }
+
+  /* Deployed Workspace Panels Mobile Padding & Controls */
+  .consol-deployed-panel {
+    padding: 15px 13px;
+    border-radius: 10px;
+  }
+
+  .consol-panel-header {
+    gap: 10px;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+  }
+
+  /* Historical Data Explorer Mobile Refinements */
+  .hist-submode-tabs {
+    width: 100%;
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .hist-submode-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hist-submode-tabs .consol-seg-btn {
+    flex: 1 0 auto;
+    min-height: 36px;
+    padding: 6px 10px;
+    white-space: nowrap;
+  }
+
+  .hist-search-box {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .hist-filter-controls {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .hist-select-label {
+    min-width: 0;
+  }
+
+  .hist-select-label .consol-status-select {
+    width: 100%;
+    min-height: 38px;
+    text-overflow: ellipsis;
+  }
+
+  .hist-obs-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hist-raw-kv-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Compact Table Cell Spacing on Mobile */
+  .consol-table th,
+  .consol-tr td {
+    padding: 8px 8px;
+    font-size: 12px;
+  }
+
+  /* Field Modals — Bottom-Sheet Ergonomics & Safe-Area Support */
+  .modal {
+    padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
+    align-items: flex-end;
+  }
+
+  .modal-box {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 22px;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal-head h2.modal-title {
+    font-size: 24px;
+    margin: 6px 0;
+  }
+
+  .type-choice {
+    min-height: 94px;
+    padding: 11px;
+  }
+
+  .capture-switch {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .capture-switch .mode {
+    text-align: center;
+    padding: 9px 4px;
+    font-size: 11.5px;
+    min-height: 38px;
+  }
+
+  .camera-actions button,
+  .camera-actions .file-label {
+    flex: 1 1 auto;
+    min-height: 42px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .modal-box .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .modal-box .actions > * {
+    width: 100%;
+    min-height: 44px;
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* The Lab Mobile Refinements */
+  .lab-library-surface,
+  .lab-section-panel,
+  .lab-contextual-inspector {
+    padding: 16px 14px;
+  }
+
+  .lab-inline-form input {
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .consol-command-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .consol-command-actions .primary {
+    grid-column: 1 / -1;
+  }
+
+  .consol-expandable-toggles {
+    grid-template-columns: 1fr;
+  }
+
+  .hist-filter-controls {
+    grid-template-columns: 1fr;
+  }
+}

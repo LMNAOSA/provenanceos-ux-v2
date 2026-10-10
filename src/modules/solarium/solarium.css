@@ -833,10 +833,69 @@
   height: 49.9948px;
   padding-right: 6px;
   margin-left: -2px;
-  max-width: none;
+  max-width: 100%;
   display: block;
 }
 
 .solarium-workstation .brand .eyebrow {
   margin: 0;
 }
+
+@media (max-width: 720px) {
+  .solarium-workstation header {
+    flex-wrap: wrap;
+    padding: 12px 0;
+    min-height: auto;
+  }
+
+  .solarium-workstation .solarium-logo-svg {
+    width: 185px;
+    height: auto;
+  }
+
+  .solarium-workstation .header-meta {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .solarium-workstation .env-pills {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .solarium-workstation .env-pill {
+    text-align: center;
+    padding: 7px 8px;
+  }
+
+  .solarium-workstation.is-immersive .workspace {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .solarium-workstation.is-immersive .stage {
+    min-height: 62svh;
+  }
+
+  .solarium-workstation .stage-top {
+    flex-wrap: wrap;
+    gap: 8px;
+    left: 12px;
+    right: 12px;
+    top: 12px;
+  }
+
+  .solarium-workstation .stage-bottom {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .solarium-workstation .observation-note-input {
+    font-size: 16px;
+  }
+}
+
