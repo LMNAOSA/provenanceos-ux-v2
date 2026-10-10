@@ -85,6 +85,7 @@ export interface ModuleRegistryEntry {
   requiredCapability: CapabilityRequirement;
   specimenContextDependency: 'none' | 'optional' | 'required';
   description: string;
+  scientificNote?: string;
 }
 
 export const MODULE_REGISTRY: ModuleRegistryEntry[] = [
