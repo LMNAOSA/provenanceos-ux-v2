@@ -156,6 +156,13 @@ export const SampleDetailView: React.FC = () => {
             </button>
             <button
               className="secondary"
+              onClick={() => navigate(`#/soloptics/${encodeURIComponent(s.id)}`)}
+              title="Open SOLOPTICS mobile optical acquisition for this specimen"
+            >
+              ◎ SOLOPTICS Capture
+            </button>
+            <button
+              className="secondary"
               onClick={() => navigate(`#/the-lab/${encodeURIComponent(s.id)}`)}
               title="Link this specimen into The Lab research workspace"
             >
@@ -193,8 +200,29 @@ export const SampleDetailView: React.FC = () => {
             </div>
           )}
 
-          {/* Integrated anchor for SOLARIUM Light Box */}
-          <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 3 }}>
+          {/* Integrated anchor for SOLARIUM Light Box & SOLOPTICS */}
+          <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 3, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => navigate(`#/soloptics/${encodeURIComponent(s.id)}`)}
+              style={{
+                fontSize: 10,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                padding: '5px 12px',
+                borderRadius: 999,
+                background: 'rgba(12, 23, 29, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.24)',
+                color: 'var(--ink)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                cursor: 'pointer'
+              }}
+              title="Open specimen in SOLOPTICS Optical Acquisition"
+            >
+              ◎ SOLOPTICS
+            </button>
             <button
               type="button"
               onClick={() => navigate(`#/solarium/${encodeURIComponent(s.id)}`)}

@@ -16,6 +16,10 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ThreeOpalViewer, ThreeOpalViewerRef } from './ThreeOpalViewer';
+import {
+  fetchSpecimenSolopticsSessions,
+  HydratedSolopticsSession
+} from '../../services/soloptics';
 import './solarium.css';
 
 const initialLighting = {
@@ -98,6 +102,43 @@ export const SolariumPage: React.FC<SolariumPageProps> = ({
   );
   const [obsNote, setObsNote] = useState('');
   const [obsSavedFeedback, setObsSavedFeedback] = useState<string | null>(null);
+
+  // SOLOPTICS Evidence Sessions linked to this specimen (BUILD 6)
+  const [solopticsSessions, setSolopticsSessions] = useState<HydratedSolopticsSession[]>([]);
+  const [activeSessionIdx, setActiveSessionIdx] = useState<number>(0);
+  const [selectedFrameUrl, setSelectedFrameUrl] = useState<string | null>(null);
+  const [selectedFrameLabel, setSelectedFrameLabel] = useState<string>('');
+  const [selectedFrameIsVideo, setSelectedFrameIsVideo] = useState<boolean>(false);
+
+  useEffect(() => {
+    let active = true;
+    if (!specimenId) {
+      setSolopticsSessions([]);
+      return;
+    }
+    fetchSpecimenSolopticsSessions(specimenId)
+      .then(sessions => {
+        if (!active) return;
+        setSolopticsSessions(sessions);
+        setActiveSessionIdx(0);
+        const firstSession = sessions[0];
+        const firstAsset =
+          firstSession?.passBAssets[0] || firstSession?.passAAssets[0] || null;
+        if (firstAsset?.signedUrl) {
+          setSelectedFrameUrl(firstAsset.signedUrl);
+          setSelectedFrameLabel(firstAsset.viewLabel);
+          setSelectedFrameIsVideo(firstAsset.isVideo);
+        } else {
+          setSelectedFrameUrl(null);
+        }
+      })
+      .catch(() => {
+        if (active) setSolopticsSessions([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [specimenId]);
 
   const ready = useCallback(() => setStatus('ready'), []);
   const failed = useCallback(() => setStatus('error'), []);
@@ -241,6 +282,8 @@ export const SolariumPage: React.FC<SolariumPageProps> = ({
     ? `Specimen · ${specimenId}`
     : 'Demonstration optical study · Specimen 01 (Matrixtwin)';
 
+  const activeSolopticsSession = solopticsSessions[activeSessionIdx] || null;
+
   return (
     <div className={`solarium-workstation ${immersiveMode ? 'is-immersive' : ''}`}>
       <div className="solarium-container">
@@ -258,6 +301,19 @@ export const SolariumPage: React.FC<SolariumPageProps> = ({
             </div>
 
             <div className="header-meta">
+              <button
+                type="button"
+                className="solarium-nav-btn"
+                onClick={() => {
+                  window.location.hash = specimenId
+                    ? `#/soloptics/${encodeURIComponent(specimenId)}`
+                    : '#/soloptics';
+                }}
+                title="Open SOLOPTICS mobile optical acquisition instrument"
+              >
+                ◎ Capture in SOLOPTICS
+              </button>
+
               {onToggleRail && (
                 <button
                   type="button"
@@ -492,6 +548,176 @@ export const SolariumPage: React.FC<SolariumPageProps> = ({
             </p>
           </aside>
         </div>
+
+        {/* BUILD 6 — SOLOPTICS CAPTURED EVIDENCE INSPECTION IN SOLARIUM */}
+        {!immersiveMode && specimenId && (
+          <section
+            className="solarium-soloptics-evidence"
+            aria-label="SOLOPTICS Captured Evidence Inspection"
+          >
+            <div className="solarium-soloptics-head">
+              <div>
+                <p className="eyebrow">SOLOPTICS · Physical &amp; Play-of-Colour Evidence</p>
+                <h3>
+                  {solopticsSessions.length > 0
+                    ? `Captured Optical Sessions for ${specimenId} (${solopticsSessions.length})`
+                    : `No SOLOPTICS Sessions Recorded Yet for ${specimenId}`}
+                </h3>
+                <p className="solarium-soloptics-note">
+                  Source smartphone optical evidence is strictly separated from the 3D SOLID/reference geometry chamber above.
+                </p>
+              </div>
+              <div className="solarium-soloptics-actions">
+                {solopticsSessions.length > 1 && (
+                  <select
+                    value={activeSessionIdx}
+                    onChange={e => setActiveSessionIdx(Number(e.target.value))}
+                    aria-label="Select SOLOPTICS capture session"
+                  >
+                    {solopticsSessions.map((sess, idx) => (
+                      <option key={sess.sessionId} value={idx}>
+                        {sess.sessionId} · {new Date(sess.capturedAt).toLocaleDateString('en-AU')}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <button
+                  type="button"
+                  className="solarium-nav-btn"
+                  onClick={() => {
+                    window.location.hash = `#/soloptics/${encodeURIComponent(specimenId)}`;
+                  }}
+                >
+                  ＋ Capture New SOLOPTICS Session
+                </button>
+              </div>
+            </div>
+
+            {activeSolopticsSession && (
+              <div className="solarium-soloptics-body">
+                <div className="solarium-soloptics-meta-strip">
+                  <span>
+                    <strong>Session:</strong> {activeSolopticsSession.sessionId}
+                  </span>
+                  <span>·</span>
+                  <span>
+                    <strong>Illumination:</strong> {activeSolopticsSession.illuminationLabel} ({activeSolopticsSession.directionLabel})
+                  </span>
+                  <span>·</span>
+                  <span>
+                    <strong>Stage:</strong> {activeSolopticsSession.backgroundLabel}
+                  </span>
+                  <span>·</span>
+                  <span>
+                    <strong>Scale Ref:</strong> {activeSolopticsSession.scaleReferenceText}
+                  </span>
+                  <span>·</span>
+                  <span>
+                    <strong>Colour Ref:</strong> {activeSolopticsSession.colourReferenceText}
+                  </span>
+                </div>
+
+                <div className="solarium-soloptics-split">
+                  {/* Pass A & Pass B Sequence Selector */}
+                  <div className="solarium-soloptics-sequences">
+                    <div className="solarium-pass-block">
+                      <span className="eyebrow">
+                        Pass A — Physical Appearance ({activeSolopticsSession.passAAssets.length})
+                      </span>
+                      {activeSolopticsSession.passAAssets.length > 0 ? (
+                        <div className="solarium-frame-grid">
+                          {activeSolopticsSession.passAAssets.map(asset => (
+                            <button
+                              key={asset.id}
+                              type="button"
+                              className={`solarium-frame-btn ${
+                                selectedFrameUrl === asset.signedUrl ? 'active' : ''
+                              }`}
+                              onClick={() => {
+                                setSelectedFrameUrl(asset.signedUrl);
+                                setSelectedFrameLabel(asset.viewLabel);
+                                setSelectedFrameIsVideo(asset.isVideo);
+                              }}
+                            >
+                              {asset.thumbUrl ? (
+                                <img src={asset.thumbUrl} alt={asset.viewLabel} />
+                              ) : (
+                                <div className="solarium-frame-fallback">Frame</div>
+                              )}
+                              <span>{asset.viewLabel}</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="solarium-empty-pass">No Pass A frames recorded in this session.</p>
+                      )}
+                    </div>
+
+                    <div className="solarium-pass-block">
+                      <span className="eyebrow">
+                        Pass B — Play-of-Colour Multi-View Sequence ({activeSolopticsSession.passBAssets.length})
+                      </span>
+                      {activeSolopticsSession.passBAssets.length > 0 ? (
+                        <div className="solarium-frame-grid">
+                          {activeSolopticsSession.passBAssets.map(asset => (
+                            <button
+                              key={asset.id}
+                              type="button"
+                              className={`solarium-frame-btn ${
+                                selectedFrameUrl === asset.signedUrl ? 'active' : ''
+                              }`}
+                              onClick={() => {
+                                setSelectedFrameUrl(asset.signedUrl);
+                                setSelectedFrameLabel(asset.viewLabel);
+                                setSelectedFrameIsVideo(asset.isVideo);
+                              }}
+                            >
+                              {asset.isVideo ? (
+                                <div className="solarium-frame-fallback">VIDEO SWEEP</div>
+                              ) : asset.thumbUrl ? (
+                                <img src={asset.thumbUrl} alt={asset.viewLabel} />
+                              ) : (
+                                <div className="solarium-frame-fallback">View #{asset.sequenceOrder}</div>
+                              )}
+                              <span>{asset.viewLabel}</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="solarium-empty-pass">No Pass B views recorded in this session.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Selected Original Evidence Frame Viewer */}
+                  <div className="solarium-soloptics-viewer">
+                    {selectedFrameUrl ? (
+                      <>
+                        <div className="solarium-selected-media">
+                          {selectedFrameIsVideo ? (
+                            <video src={selectedFrameUrl} controls playsInline />
+                          ) : (
+                            <img src={selectedFrameUrl} alt={selectedFrameLabel} />
+                          )}
+                        </div>
+                        <div className="solarium-selected-caption">
+                          <strong>{selectedFrameLabel}</strong>
+                          <small>
+                            Original uncalibrated RGB sensor evidence · Not a spectral measurement
+                          </small>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="solarium-selected-empty">
+                        Select a Pass A or Pass B frame to inspect original optical evidence alongside the 3D Light Box.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {!immersiveMode && (
           <footer>

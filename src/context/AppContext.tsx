@@ -188,12 +188,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   // Effective railCollapsed state:
-  // - In SOLARIUM: collapsed by default (!instrumentRailExpanded)
+  // - In SOLARIUM or SOLOPTICS: collapsed by default (!instrumentRailExpanded)
   // - In other workspaces: uses workstationRailCollapsed (false by default -> 232px normal rail)
-  const railCollapsed = route === 'solarium' ? !instrumentRailExpanded : workstationRailCollapsed;
+  const isInstrumentRoute = route === 'solarium' || route === 'soloptics';
+  const railCollapsed = isInstrumentRoute ? !instrumentRailExpanded : workstationRailCollapsed;
 
   const setRailCollapsed = useCallback((collapsed: boolean) => {
-    if (route === 'solarium') {
+    if (route === 'solarium' || route === 'soloptics') {
       setInstrumentRailExpanded(!collapsed);
       return;
     }
@@ -215,7 +216,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const navigationMode: NavigationMode = useMemo(() => {
-    if (route === 'solarium') {
+    if (route === 'solarium' || route === 'soloptics') {
       if (immersiveMode) return 'immersive';
       return 'instrument';
     }
@@ -225,12 +226,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const syncHash = useCallback(() => {
     const parsed = parseHash(window.location.hash);
     setRoute(prevRoute => {
-      // When entering SOLARIUM from another workspace, activate compact instrument rail automatically
-      if (parsed.route === 'solarium' && prevRoute !== 'solarium') {
+      const nextIsInstrument = parsed.route === 'solarium' || parsed.route === 'soloptics';
+      const prevIsInstrument = prevRoute === 'solarium' || prevRoute === 'soloptics';
+      // When entering SOLARIUM or SOLOPTICS from another workspace, activate compact instrument rail automatically
+      if (nextIsInstrument && !prevIsInstrument) {
         setInstrumentRailExpanded(false);
       }
-      // When leaving SOLARIUM for another workspace, exit immersive mode and reset instrument rail override
-      if (parsed.route !== 'solarium' && prevRoute === 'solarium') {
+      // When leaving SOLARIUM or SOLOPTICS for another workspace, exit immersive mode and reset instrument rail override
+      if (!nextIsInstrument && prevIsInstrument) {
         setImmersiveModeState(false);
         setInstrumentRailExpanded(false);
       }

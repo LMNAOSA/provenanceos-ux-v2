@@ -12,6 +12,7 @@ export type AppRoute =
   | 'samples'
   | 'sample'
   | 'solarium'
+  | 'soloptics'
   | 'xrf-inbox'
   | 'evidence'
   | 'reference-data'
@@ -188,12 +189,12 @@ export const MODULE_REGISTRY: ModuleRegistryEntry[] = [
     id: 'soloptics',
     pillar: 'VISUALISATION',
     label: 'SOLOPTICS',
-    route: null,
-    hash: null,
-    availability: 'planned',
+    route: 'soloptics',
+    hash: '#/soloptics',
+    availability: 'operational',
     requiredCapability: 'field-acquisition',
-    specimenContextDependency: 'required',
-    description: 'Guided physical 3D capture sessions.'
+    specimenContextDependency: 'optional',
+    description: 'Phone-first guided optical acquisition (Pass A Physical Appearance & Pass B Play-of-Colour).'
   },
   {
     id: 'solid',
@@ -283,6 +284,7 @@ export const APP_ROUTES: RouteItem[] = [
   { id: 'method', name: 'Field Method', slug: 'method', hash: '#/method', pillar: 'COLLECTION' },
   { id: 'the-lab', name: 'Investigations', slug: 'the-lab', hash: '#/the-lab', pillar: 'SCIENCE' },
   { id: 'solarium', name: 'SOLARIUM', slug: 'solarium', hash: '#/solarium', pillar: 'VISUALISATION' },
+  { id: 'soloptics', name: 'SOLOPTICS', slug: 'soloptics', hash: '#/soloptics', pillar: 'VISUALISATION' },
   { id: 'provenance', name: 'Provenance', slug: 'provenance', hash: '#/provenance', pillar: 'WORKSPACE' },
   { id: 'settings', name: 'Settings', slug: 'settings', hash: '#/settings' }
 ];
@@ -299,6 +301,7 @@ export function getPillarForRoute(route: AppRoute): PillarId | null {
     case 'the-lab':
       return 'SCIENCE';
     case 'solarium':
+    case 'soloptics':
       return 'VISUALISATION';
     case 'provenance':
       return 'WORKSPACE';
@@ -351,6 +354,14 @@ export function parseHash(hash: string): ParsedRoute {
       return { route: 'solarium', specimenId: decoded, subId: decoded, hash };
     }
     return { route: 'solarium', specimenId: null, subId: null, hash };
+  }
+
+  if (first === 'soloptics') {
+    if (parts[1]) {
+      const decoded = decodeURIComponent(parts[1]);
+      return { route: 'soloptics', specimenId: decoded, subId: decoded, hash };
+    }
+    return { route: 'soloptics', specimenId: null, subId: null, hash };
   }
 
   if (first === 'the-lab' || first === 'lab' || first === 'investigations') {

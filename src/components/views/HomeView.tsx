@@ -767,6 +767,19 @@ export const HomeView: React.FC = () => {
             onClick={() =>
               navigate(
                 activeSpecimenId
+                  ? `#/soloptics/${encodeURIComponent(activeSpecimenId)}`
+                  : '#/soloptics'
+              )
+            }
+          >
+            SOLOPTICS
+          </button>
+          <button
+            type="button"
+            className="secondary consol-action-btn"
+            onClick={() =>
+              navigate(
+                activeSpecimenId
                   ? `#/solarium/${encodeURIComponent(activeSpecimenId)}`
                   : '#/solarium'
               )

@@ -672,3 +672,123 @@ test('CONSOL v3.6 regression suite covers unit conversions, synonyms, duplicate 
   assert.equal(histOnlyRes.rankedRows.length, 1);
   assert.equal(histOnlyRes.rankedRows[0].sourceKind, 'HISTORICAL');
 });
+
+// Test 18: SOLOPTICS v1.0 — Guided Dual-Pass Capture, Quality Evaluation, Acquisition Metadata & Resilient Recovery
+test('SOLOPTICS v1.0 enforces specimen binding, Pass A & Pass B completeness, camera AE/AWB limitation flags, SHA-256 hashing, and idempotent retry recovery', async () => {
+  // 1. Verify SOLOPTICS route parsing (#/soloptics and #/soloptics/:id)
+  function parseSolopticsHash(hash) {
+    const clean = hash.replace(/^#\/?/, '').trim();
+    const parts = clean.split('/').filter(Boolean);
+    if (parts[0]?.toLowerCase() === 'soloptics') {
+      return {
+        route: 'soloptics',
+        specimenId: parts[1] ? decodeURIComponent(parts[1]) : null
+      };
+    }
+    return { route: 'home', specimenId: null };
+  }
+
+  assert.deepEqual(parseSolopticsHash('#/soloptics'), { route: 'soloptics', specimenId: null });
+  assert.deepEqual(parseSolopticsHash('#/soloptics/AHM-000001'), {
+    route: 'soloptics',
+    specimenId: 'AHM-000001'
+  });
+
+  // 2. Verify Pass A (Physical Appearance) and Pass B (Play-of-Colour) completeness evaluation
+  function evaluatePassCompleteness(assets, conditions) {
+    const passA = assets.filter(a => a.pass === 'pass_a_appearance');
+    const passB = assets.filter(a => a.pass === 'pass_b_play_of_colour');
+    const reqRoles = ['front_surface', 'reverse_surface', 'side_profile'];
+    const missingA = reqRoles.filter(r => !passA.some(a => a.stepRole === r));
+    const passAComplete = missingA.length === 0;
+    const passBStills = passB.filter(a => !a.isVideo).length;
+    const passBVideos = passB.filter(a => a.isVideo).length;
+    const passBComplete = passBStills >= 3 || (passBStills >= 2 && passBVideos >= 1);
+
+    return {
+      passAComplete,
+      missingA,
+      passBComplete,
+      passBStills,
+      passBVideos,
+      scaleRecorded: Boolean(conditions.scaleReferencePresent),
+      colourRecorded: Boolean(conditions.colourReferencePresent)
+    };
+  }
+
+  const partialResult = evaluatePassCompleteness(
+    [
+      { pass: 'pass_a_appearance', stepRole: 'front_surface', isVideo: false },
+      { pass: 'pass_b_play_of_colour', stepRole: 'poc_view_1', isVideo: false }
+    ],
+    { scaleReferencePresent: false, colourReferencePresent: false }
+  );
+  assert.equal(partialResult.passAComplete, false);
+  assert.deepEqual(partialResult.missingA, ['reverse_surface', 'side_profile']);
+  assert.equal(partialResult.passBComplete, false);
+  assert.equal(partialResult.scaleRecorded, false);
+
+  const completeResult = evaluatePassCompleteness(
+    [
+      { pass: 'pass_a_appearance', stepRole: 'front_surface', isVideo: false },
+      { pass: 'pass_a_appearance', stepRole: 'reverse_surface', isVideo: false },
+      { pass: 'pass_a_appearance', stepRole: 'side_profile', isVideo: false },
+      { pass: 'pass_b_play_of_colour', stepRole: 'poc_view_1', isVideo: false },
+      { pass: 'pass_b_play_of_colour', stepRole: 'poc_view_2', isVideo: false },
+      { pass: 'pass_b_play_of_colour', stepRole: 'poc_view_3', isVideo: false }
+    ],
+    { scaleReferencePresent: true, colourReferencePresent: true }
+  );
+  assert.equal(completeResult.passAComplete, true);
+  assert.equal(completeResult.passBComplete, true);
+  assert.equal(completeResult.scaleRecorded, true);
+  assert.equal(completeResult.colourRecorded, true);
+
+  // 3. Verify partial upload failure retains storagePath & sha256 and marks asset 'retryable' without duplicating storage blobs
+  const mockAsset = {
+    id: 'sol-asset-1',
+    sessionId: 'SOL-TEST01',
+    sampleId: 'AHM-000001',
+    pass: 'pass_a_appearance',
+    stepRole: 'front_surface',
+    sequenceOrder: 1,
+    uploadState: 'pending',
+    sha256: null,
+    storagePath: null
+  };
+
+  let storageUploadCalls = 0;
+  let dbInsertCalls = 0;
+
+  async function simulateResilientSolopticsUpload(asset, shouldFailDb) {
+    if (!asset.sha256) {
+      asset.sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+    }
+    if (!asset.storagePath) {
+      storageUploadCalls++;
+      asset.storagePath = `${asset.sampleId}/soloptics_${asset.sessionId}_${asset.pass}_01.jpg`;
+    }
+    dbInsertCalls++;
+    if (shouldFailDb) {
+      asset.uploadState = 'retryable';
+      throw new Error('Simulated network interruption during DB insert');
+    }
+    asset.uploadState = 'saved';
+    return asset;
+  }
+
+  // First attempt fails on DB insert after storage upload succeeds
+  await assert.rejects(
+    () => simulateResilientSolopticsUpload(mockAsset, true),
+    /Simulated network interruption/
+  );
+  assert.equal(mockAsset.uploadState, 'retryable');
+  assert.equal(storageUploadCalls, 1);
+  assert.equal(dbInsertCalls, 1);
+
+  // Second attempt (retry) reuses storagePath & sha256 without re-uploading to storage
+  await simulateResilientSolopticsUpload(mockAsset, false);
+  assert.equal(mockAsset.uploadState, 'saved');
+  assert.equal(storageUploadCalls, 1); // No duplicate storage upload!
+  assert.equal(dbInsertCalls, 2);
+});

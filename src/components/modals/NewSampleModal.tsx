@@ -32,7 +32,7 @@ interface NewSampleModalProps {
 }
 
 export const NewSampleModal: React.FC<NewSampleModalProps> = ({ isOpen, onClose }) => {
-  const { navigate, toast } = useApp();
+  const { route, setActiveSpecimenId, navigate, toast } = useApp();
 
   // Specimen Metadata State
   const [code, setCode] = useState<SpecimenCode>('AHM');
@@ -311,9 +311,15 @@ export const NewSampleModal: React.FC<NewSampleModalProps> = ({ isOpen, onClose 
         shots.forEach(revokeShotUrl);
         setShots([]);
         setIsSubmitting(false);
+        setActiveSpecimenId(specimenIdToUse);
         onClose();
         toast(`${specimenIdToUse} registered`);
-        navigate(`#/samples/${encodeURIComponent(specimenIdToUse)}`);
+        window.dispatchEvent(new Event('consol:data-updated'));
+        if (route === 'soloptics') {
+          navigate(`#/soloptics/${encodeURIComponent(specimenIdToUse)}`);
+        } else {
+          navigate(`#/samples/${encodeURIComponent(specimenIdToUse)}`);
+        }
       }
     } catch (err) {
       setIsSubmitting(false);

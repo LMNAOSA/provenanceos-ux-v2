@@ -18,6 +18,7 @@ import { ProvenanceView } from '../views/ProvenanceView';
 import { SettingsView } from '../views/SettingsView';
 import { TheLabView } from '../views/TheLabView';
 import { ModuleDirectoryView } from '../views/ModuleDirectoryView';
+import { SolopticsView } from '../views/SolopticsView';
 import { NewSampleModal } from '../modals/NewSampleModal';
 import { EvidenceModal } from '../modals/EvidenceModal';
 import { TreatmentModal } from '../modals/TreatmentModal';
@@ -58,6 +59,8 @@ export const Shell: React.FC = () => {
         return <TheLabView />;
       case 'modules':
         return <ModuleDirectoryView />;
+      case 'soloptics':
+        return <SolopticsView />;
       case 'solarium':
         return (
           <React.Suspense
@@ -109,11 +112,12 @@ export const Shell: React.FC = () => {
   const vantaImportPayload = modalPayload as { sampleId?: string | null } | null;
   const historicalImportPayload = modalPayload as { preloadBundled2018?: boolean } | null;
 
+  const isInstrumentView = route === 'solarium' || route === 'soloptics';
   const shellClasses = [
     'shell',
     railCollapsed ? 'rail-is-collapsed' : '',
-    route === 'solarium' ? 'in-solarium' : '',
-    immersiveMode && route === 'solarium' ? 'is-immersive-instrument' : ''
+    isInstrumentView ? 'in-solarium' : '',
+    immersiveMode && isInstrumentView ? 'is-immersive-instrument' : ''
   ]
     .filter(Boolean)
     .join(' ');

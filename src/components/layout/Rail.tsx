@@ -156,8 +156,8 @@ export const Rail: React.FC = () => {
   const handleModuleClick = (moduleRoute: string, hash: string | null) => {
     if (!hash) return;
     setMobileNavOpen(false);
-    if (moduleRoute === 'solarium' && activeSpecimenId) {
-      navigate(`#/solarium/${encodeURIComponent(activeSpecimenId)}`);
+    if ((moduleRoute === 'solarium' || moduleRoute === 'soloptics') && activeSpecimenId) {
+      navigate(`#/${moduleRoute}/${encodeURIComponent(activeSpecimenId)}`);
       return;
     }
     navigate(hash);
@@ -184,7 +184,7 @@ export const Rail: React.FC = () => {
     togglePillar(pillarId);
   };
 
-  const isInstrumentMode = route === 'solarium';
+  const isInstrumentMode = route === 'solarium' || route === 'soloptics';
 
   return (
     <aside
