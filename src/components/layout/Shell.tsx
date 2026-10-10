@@ -1,7 +1,7 @@
 /**
  * CONSOL Application Shell
- * Connects the persistent navigation rail to native modular React views,
- * toast messaging, and modal dialogs.
+ * Connects the persistent four-pillar navigation rail to native modular React views,
+ * persistent specimen context, toast messaging, and modal dialogs.
  */
 
 import React from 'react';
@@ -15,6 +15,8 @@ import { ReferenceDataView } from '../views/ReferenceDataView';
 import { MethodView } from '../views/MethodView';
 import { ProvenanceView } from '../views/ProvenanceView';
 import { SettingsView } from '../views/SettingsView';
+import { TheLabView } from '../views/TheLabView';
+import { ModuleDirectoryView } from '../views/ModuleDirectoryView';
 import { NewSampleModal } from '../modals/NewSampleModal';
 import { EvidenceModal } from '../modals/EvidenceModal';
 import { TreatmentModal } from '../modals/TreatmentModal';
@@ -23,7 +25,19 @@ import type { CaptureKind } from '../../types';
 const SolariumPage = React.lazy(() => import('../../modules/solarium/SolariumPage'));
 
 export const Shell: React.FC = () => {
-  const { route, specimenId, toastState, activeModal, modalPayload, closeModal } = useApp();
+  const {
+    route,
+    specimenId,
+    activeSpecimenId,
+    railCollapsed,
+    toastState,
+    activeModal,
+    modalPayload,
+    closeModal
+  } = useApp();
+
+  // Pass either the explicit URL specimenId or the persisted activeSpecimenId into SOLARIUM
+  const solariumSpecimenId = specimenId || activeSpecimenId;
 
   const renderActiveView = () => {
     switch (route) {
@@ -33,6 +47,10 @@ export const Shell: React.FC = () => {
         return <SamplesView />;
       case 'sample':
         return <SampleDetailView />;
+      case 'the-lab':
+        return <TheLabView />;
+      case 'modules':
+        return <ModuleDirectoryView />;
       case 'solarium':
         return (
           <React.Suspense
@@ -53,7 +71,7 @@ export const Shell: React.FC = () => {
               </div>
             }
           >
-            <SolariumPage specimenId={specimenId} />
+            <SolariumPage specimenId={solariumSpecimenId} />
           </React.Suspense>
         );
       case 'xrf-inbox':
@@ -77,9 +95,9 @@ export const Shell: React.FC = () => {
   const treatmentPayload = modalPayload as { sampleId?: string } | null;
 
   return (
-    <div className="shell">
+    <div className={`shell ${railCollapsed ? 'rail-is-collapsed' : ''} ${route === 'solarium' ? 'in-solarium' : ''}`}>
       <Rail />
-      <main className="content" id="content">
+      <main className={`content ${route === 'solarium' ? 'content-solarium' : ''}`} id="content">
         {renderActiveView()}
       </main>
 
@@ -104,7 +122,6 @@ export const Shell: React.FC = () => {
         initialKind={evidencePayload?.kind || 'visible'}
         onClose={closeModal}
         onSuccess={() => {
-          // Trigger route refresh
           window.dispatchEvent(new Event('hashchange'));
         }}
       />
@@ -114,7 +131,6 @@ export const Shell: React.FC = () => {
         sampleId={treatmentPayload?.sampleId || null}
         onClose={closeModal}
         onSuccess={() => {
-          // Trigger route refresh
           window.dispatchEvent(new Event('hashchange'));
         }}
       />

@@ -22,7 +22,6 @@ import {
   SPECIMEN_TYPE_BY_CODE,
   CaptureKind
 } from '../../types';
-import { SOLARIUM_MODULE_SLOT } from '../../modules/solarium';
 
 const EVENT_LABELS: Record<string, string> = {
   registered: 'Registered',
@@ -150,9 +149,16 @@ export const SampleDetailView: React.FC = () => {
         title={s.id}
         sub={`${typeInfo.short} · ${typeInfo.name} · ${s.location || 'Location not recorded'}`}
         action={
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="secondary" onClick={() => navigate('#/samples')}>
               ← Registry
+            </button>
+            <button
+              className="secondary"
+              onClick={() => navigate(`#/the-lab/${encodeURIComponent(s.id)}`)}
+              title="Link this specimen into The Lab research workspace"
+            >
+              Open in The Lab
             </button>
             <a
               className="primary"

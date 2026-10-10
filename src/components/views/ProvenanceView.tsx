@@ -71,12 +71,29 @@ export const ProvenanceView: React.FC = () => {
   return (
     <>
       <TopHeader
-        eyebrow="ProvenanceOS"
-        title="Provenance"
-        sub="A quiet history of what happened to each specimen."
+        eyebrow="WORKSPACE · PROVENANCE & CUSTODY"
+        title="Provenance & Custody"
+        sub="Append-only chronological audit trail of specimen registration, evidence capture, pXRF attachment, and physical treatments."
       />
 
       <section className="surface">
+        <div
+          style={{
+            marginBottom: 18,
+            paddingBottom: 14,
+            borderBottom: '1px solid var(--line)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 10
+          }}
+        >
+          <span className="eyebrow">Authoritative Database Event Log (sample_events)</span>
+          <small style={{ color: 'var(--muted)', fontSize: 12 }}>
+            Records physical registry and analytical events. Formal chain-of-possession custody transfers and external attestations are reserved for Phase H.
+          </small>
+        </div>
         {error && (
           <div className="form-error" style={{ marginBottom: 16 }}>
             {error}
