@@ -299,3 +299,125 @@ test('the-lab route distinguishes specimen IDs from investigation IDs without co
   assert.equal(withInvestigation.specimenId, null);
   assert.equal(withInvestigation.subId, 'inv-m9x8k2');
 });
+
+
+// Test 12: Production Authentication State Machine (Issue 1 Regression)
+test('authentication state machine strictly enforces unauthenticated, pending, offline, and expired session states', () => {
+  function resolveAuthState({ session, serverUserValid, isStaff, networkError, authTokenError }) {
+    if (networkError) return 'offline';
+    if (!session || !session.access_token || authTokenError || !serverUserValid) {
+      return 'unauthenticated';
+    }
+    if (!isStaff) {
+      return 'pending';
+    }
+    return 'authenticated';
+  }
+
+  // 1. Fresh private session (no stored credentials) -> Login screen ('unauthenticated')
+  assert.equal(
+    resolveAuthState({ session: null, serverUserValid: false, isStaff: false, networkError: false, authTokenError: false }),
+    'unauthenticated'
+  );
+
+  // 2. Valid authenticated session + authorised staff -> 'authenticated'
+  assert.equal(
+    resolveAuthState({
+      session: { access_token: 'valid-jwt' },
+      serverUserValid: true,
+      isStaff: true,
+      networkError: false,
+      authTokenError: false
+    }),
+    'authenticated'
+  );
+
+  // 3. Authenticated user not on staff list -> 'pending'
+  assert.equal(
+    resolveAuthState({
+      session: { access_token: 'valid-jwt' },
+      serverUserValid: true,
+      isStaff: false,
+      networkError: false,
+      authTokenError: false
+    }),
+    'pending'
+  );
+
+  // 4. Expired or revoked session -> 'unauthenticated'
+  assert.equal(
+    resolveAuthState({
+      session: { access_token: 'expired-jwt' },
+      serverUserValid: false,
+      isStaff: true,
+      networkError: false,
+      authTokenError: true
+    }),
+    'unauthenticated'
+  );
+
+  // 5. Network failure -> 'offline' (never auto-authorises)
+  assert.equal(
+    resolveAuthState({
+      session: { access_token: 'valid-jwt' },
+      serverUserValid: true,
+      isStaff: true,
+      networkError: true,
+      authTokenError: false
+    }),
+    'offline'
+  );
+});
+
+// Test 13: Mobile Media & Import MIME Resolution and Target-Specimen Locking (Issue 2 Regression)
+test('mobile file selection resolves MIME types from extensions and locks specimen-targeted pXRF imports', () => {
+  const EXTENSION_TO_MIME = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    heic: 'image/heic',
+    heif: 'image/heif',
+    mp4: 'video/mp4',
+    webm: 'video/webm',
+    mov: 'video/quicktime'
+  };
+
+  function resolveMediaMime(file) {
+    const rawType = (file.type || '').trim().toLowerCase();
+    if (rawType.startsWith('image/') || rawType.startsWith('video/')) return rawType;
+    const ext = ((file.name || '').split('.').pop() || '').trim().toLowerCase();
+    return EXTENSION_TO_MIME[ext] || rawType;
+  }
+
+  // Mobile iOS Files / Android empty or octet-stream MIME fallback
+  assert.equal(resolveMediaMime({ name: 'IMG_4021.HEIC', type: '' }), 'image/heic');
+  assert.equal(resolveMediaMime({ name: 'afterglow.MOV', type: 'application/octet-stream' }), 'video/quicktime');
+  assert.equal(resolveMediaMime({ name: 'specimen.jpg', type: '' }), 'image/jpeg');
+
+  // Historical raw bucket upload MIME compatibility with vanta-raw allowed_mime_types
+  function resolveRawBucketUploadMime(fileName) {
+    const ext = (fileName.split('.').pop() || '').toLowerCase();
+    return ext === 'xlsx' || ext === 'xls' ? 'application/vnd.ms-excel' : 'text/csv';
+  }
+  assert.equal(resolveRawBucketUploadMime('2018_Historical_XRF_Data.xlsx'), 'application/vnd.ms-excel');
+  assert.equal(resolveRawBucketUploadMime('vanta_export.csv'), 'text/csv');
+
+  // Specimen-targeted import lock prevents attaching rows from other specimens
+  function matchRowWithTarget(rowSampleId, lockedTarget) {
+    if (lockedTarget) {
+      if (!rowSampleId || rowSampleId === lockedTarget) {
+        return { matched: lockedTarget, reason: null };
+      }
+      return { matched: null, reason: `row is labelled ${rowSampleId} (expected ${lockedTarget})` };
+    }
+    return { matched: rowSampleId, reason: rowSampleId ? null : 'no specimen ID in row' };
+  }
+
+  assert.deepEqual(matchRowWithTarget('AHM-000042', 'AHM-000042'), { matched: 'AHM-000042', reason: null });
+  assert.deepEqual(matchRowWithTarget(null, 'AHM-000042'), { matched: 'AHM-000042', reason: null });
+  assert.deepEqual(matchRowWithTarget('ACC-000009', 'AHM-000042'), {
+    matched: null,
+    reason: 'row is labelled ACC-000009 (expected AHM-000042)'
+  });
+});

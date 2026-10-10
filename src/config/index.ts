@@ -44,6 +44,7 @@ export const config = {
   DEFAULT_LOCATION: 'Andamooka, South Australia',
   MAX_PHOTO_BYTES: 25 * 1024 * 1024,
   MAX_VIDEO_BYTES: 75 * 1024 * 1024,
+  MAX_RAW_CSV_BYTES: 50 * 1024 * 1024,
 };
 
 export default config;
