@@ -437,7 +437,7 @@ export const HomeView: React.FC = () => {
   );
 
   // Compute live interrogation result from executedQuery (or live inputQuery)
-  const activeQueryText = executedQuery || inputQuery.trim();
+  const activeQueryText = executedQuery;
   const interrogationResult = useMemo(() => {
     if (!activeQueryText) return null;
     return interrogateConsolData(activeQueryText, {
@@ -575,7 +575,7 @@ export const HomeView: React.FC = () => {
 
       return (
         s.id.toLowerCase().includes(q) ||
-        s.sample_code.toLowerCase().includes(q) ||
+        (s.sample_code || '').toLowerCase().includes(q) ||
         (s.sample_type || '').toLowerCase().includes(q) ||
         (s.location || '').toLowerCase().includes(q) ||
         elementKeys.includes(q)
