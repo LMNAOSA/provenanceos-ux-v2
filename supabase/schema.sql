@@ -86,7 +86,23 @@ drop trigger if exists images_logged on public.sample_images; create trigger ima
 drop trigger if exists measurements_logged on public.sample_measurements; create trigger measurements_logged after insert on public.sample_measurements for each row execute function public.log_measurement_added();
 drop trigger if exists analyses_logged on public.analyses; create trigger analyses_logged after insert on public.analyses referencing new table as new_rows for each statement execute function public.log_analyses_added();
 
--- Replace the legacy overview view cleanly: the v2 view adds sample_code and other columns,\n-- so CREATE OR REPLACE VIEW cannot change the existing view's column names/order.\ndrop view if exists public.sample_overview;\ncreate or replace view public.sample_overview with (security_invoker=true) as select s.*,(select count(*) from public.sample_images i where i.sample_id=s.id) image_count,(select count(*) from public.analyses a where a.sample_id=s.id) analysis_count,c.storage_path cover_path,c.thumb_path cover_thumb_path from public.samples s left join lateral(select i.storage_path,i.thumb_path from public.sample_images i where i.sample_id=s.id and i.capture_kind='visible' order by i.created_at limit 1)c on true;
+-- Replace the legacy overview view cleanly: the v2 view adds sample_code and other columns,
+-- so CREATE OR REPLACE VIEW cannot change the existing view's column names/order.
+drop view if exists public.sample_overview;
+create or replace view public.sample_overview with (security_invoker=true) as
+select s.*,
+  (select count(*) from public.sample_images i where i.sample_id = s.id) image_count,
+  (select count(*) from public.analyses a where a.sample_id = s.id) analysis_count,
+  c.storage_path cover_path,
+  c.thumb_path cover_thumb_path
+from public.samples s
+left join lateral (
+  select i.storage_path, i.thumb_path
+  from public.sample_images i
+  where i.sample_id = s.id and i.capture_kind = 'visible'
+  order by i.created_at
+  limit 1
+) c on true;
 
 alter table public.samples enable row level security;
 alter table public.sample_images enable row level security;
