@@ -436,7 +436,7 @@ export const HomeView: React.FC = () => {
     ]
   );
 
-  // Compute live interrogation result from executedQuery (or live inputQuery)
+  // Compute interrogation result only from submitted queries
   const activeQueryText = executedQuery;
   const interrogationResult = useMemo(() => {
     if (!activeQueryText) return null;
@@ -585,7 +585,7 @@ export const HomeView: React.FC = () => {
     return [...filtered].sort((a, b) => {
       const factor = sortDir === 'asc' ? 1 : -1;
       if (sortField === 'id') return a.id.localeCompare(b.id) * factor;
-      if (sortField === 'sample_code') return a.sample_code.localeCompare(b.sample_code) * factor;
+      if (sortField === 'sample_code') return (a.sample_code || '').localeCompare(b.sample_code || '') * factor;
       if (sortField === 'weight_g') return ((a.weight_g || 0) - (b.weight_g || 0)) * factor;
       if (sortField === 'image_count') return ((a.image_count || 0) - (b.image_count || 0)) * factor;
       if (sortField === 'analysis_count') return ((a.analysis_count || 0) - (b.analysis_count || 0)) * factor;
@@ -864,10 +864,10 @@ export const HomeView: React.FC = () => {
               className="consol-search-input consol-ask-main-input"
               placeholder="Ask a scientific question or follow-up: e.g. 'Highest sulfur', 'Show me the next five', 'Compare with chromium'… (Press /)"
               value={inputQuery}
-              onChange={e => setInputQuery(e.target.value)}
+              onChange={e => { setInputQuery(e.target.value); setExecutedQuery(''); }}
               aria-label="Ask CONSOL scientific question input"
             />
-            {activeQueryText && (
+            {inputQuery && (
               <button
                 type="button"
                 className="consol-search-clear"
