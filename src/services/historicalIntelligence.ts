@@ -1149,7 +1149,7 @@ export function interrogateConsolData(
     const elKeys = latestAna?.results ? Object.keys(latestAna.results).join(' ').toLowerCase() : '';
     return (
       s.id.toLowerCase().includes(qLower) ||
-      s.sample_code.toLowerCase().includes(qLower) ||
+      (s.sample_code || '').toLowerCase().includes(qLower) ||
       (s.sample_type || '').toLowerCase().includes(qLower) ||
       (s.location || '').toLowerCase().includes(qLower) ||
       elKeys.includes(qLower)
