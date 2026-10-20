@@ -62,8 +62,15 @@ function finiteNumber(value: unknown): number | null {
 }
 function optionalDate(value: unknown): string | null {
   if (!value) return null;
-  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString();
-  // Some EXIF timestamps lack time-zone offsets. Store exactly what the camera wrote.
+  // EXIF DateTimeOriginal normally has no time zone. exifr may convert it into a
+  // JavaScript Date. Never call toISOString(): that would invent a UTC offset.
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return value.getFullYear() + ':' + pad(value.getMonth() + 1) + ':' + pad(value.getDate()) +
+      ' ' + pad(value.getHours()) + ':' + pad(value.getMinutes()) + ':' + pad(value.getSeconds()) +
+      ' (EXIF wall-clock time; offset unspecified)';
+  }
   return typeof value === 'string' ? value : null;
 }
 
