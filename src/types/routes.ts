@@ -10,6 +10,7 @@
 export type AppRoute =
   | 'home'
   | 'samples'
+  | 'field-map'
   | 'sample'
   | 'solarium'
   | 'soloptics'
@@ -102,6 +103,17 @@ export const MODULE_REGISTRY: ModuleRegistryEntry[] = [
     requiredCapability: 'staff',
     specimenContextDependency: 'optional',
     description: 'Authoritative physical specimen registry (AHM, ACC, ACX, OTH).'
+  },
+  {
+    id: 'field-map',
+    pillar: 'COLLECTION',
+    label: 'Field Map',
+    route: 'field-map',
+    hash: '#/field-map',
+    availability: 'operational',
+    requiredCapability: 'staff',
+    specimenContextDependency: 'optional',
+    description: 'Private, evidence-linked field coordinates recovered from original camera metadata.'
   },
   {
     id: 'xrf-inbox',
@@ -278,6 +290,7 @@ export interface RouteItem {
 export const APP_ROUTES: RouteItem[] = [
   { id: 'home', name: 'CONSOL', slug: 'home', hash: '#/home' },
   { id: 'samples', name: 'Specimens', slug: 'samples', hash: '#/samples', pillar: 'COLLECTION' },
+  { id: 'field-map', name: 'Field Map', slug: 'field-map', hash: '#/field-map', pillar: 'COLLECTION' },
   { id: 'xrf-inbox', name: 'XRF Inbox', slug: 'xrf-inbox', hash: '#/xrf-inbox', pillar: 'COLLECTION' },
   { id: 'evidence', name: 'Evidence', slug: 'evidence', hash: '#/evidence', pillar: 'COLLECTION' },
   { id: 'reference-data', name: 'Reference Data', slug: 'reference-data', hash: '#/reference-data', pillar: 'COLLECTION' },
@@ -292,6 +305,7 @@ export const APP_ROUTES: RouteItem[] = [
 export function getPillarForRoute(route: AppRoute): PillarId | null {
   switch (route) {
     case 'samples':
+    case 'field-map':
     case 'sample':
     case 'xrf-inbox':
     case 'evidence':
@@ -377,6 +391,7 @@ export function parseHash(hash: string): ParsedRoute {
     return { route: 'the-lab', specimenId: null, subId: null, hash };
   }
 
+  if (first === 'field-map') return { route: 'field-map', specimenId: null, subId: null, hash };
   if (first === 'xrf-inbox') return { route: 'xrf-inbox', specimenId: null, subId: null, hash };
   if (first === 'evidence') return { route: 'evidence', specimenId: null, subId: null, hash };
   if (first === 'reference-data') return { route: 'reference-data', specimenId: null, subId: null, hash };
