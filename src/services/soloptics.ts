@@ -13,6 +13,7 @@
  */
 
 import config from '../config';
+import { extractPhotoGeo, savePhotoGeoObservation } from './geographicEvidence';
 import { getSupabase, api, signed } from './supabase';
 import { sha256, validateMedia, generateThumbnailBlob, resolveMediaMime } from './media';
 import type { CaptureKind, SpecimenImage } from '../types';
@@ -825,6 +826,21 @@ export async function uploadSolopticsAsset(
       width_px: asset.quality.widthPx || null,
       height_px: asset.quality.heightPx || null
     });
+
+    if (mime.startsWith('image/')) {
+      try {
+        const geo = await extractPhotoGeo(asset.file);
+        if (geo) {
+          await savePhotoGeoObservation({
+            id: imageRecord.id, sample_id: asset.sampleId, file_name: asset.file.name,
+            storage_path: storagePath, thumb_path: thumbPath, content_type: mime,
+            size_bytes: asset.file.size, sha256: hash
+          }, geo, hash);
+        }
+      } catch {
+        // Missing migration or EXIF must never invalidate optical evidence upload.
+      }
+    }
 
     asset.uploadState = 'saved';
     asset.savedSampleImageId = imageRecord.id;
