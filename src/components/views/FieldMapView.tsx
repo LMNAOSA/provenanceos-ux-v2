@@ -29,6 +29,23 @@ interface Pin {
   preview: boolean;
 }
 const ANDAMOOKA_CENTER: [number, number] = [137.16, -30.45];
+const STREET_STYLE = (import.meta.env.VITE_GEO_MAP_STYLE_URL as string | undefined)?.trim() || 'https://tiles.openfreemap.org/styles/liberty';
+// A licensed imagery style can replace this demonstration source via Vercel.
+// Do not expose specimen coordinates or private dataset identifiers in tile URLs.
+const LICENSED_SATELLITE_STYLE = (import.meta.env.VITE_GEO_SATELLITE_STYLE_URL as string | undefined)?.trim();
+const SATELLITE_STYLE = {
+  version: 8 as const,
+  sources: {
+    'world-imagery': {
+      type: 'raster' as const,
+      tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+      tileSize: 256,
+      attribution: 'Imagery &copy; Esri, Vantor, Earthstar Geographics, and the GIS User Community'
+    }
+  },
+  layers: [{ id: 'satellite-imagery', type: 'raster' as const, source: 'world-imagery' }]
+};
+type BasemapMode = 'streets' | 'satellite';
 
 function FieldGeoMap({ pins, selectedId, onSelect }: {
   pins: Pin[];
@@ -39,20 +56,30 @@ function FieldGeoMap({ pins, selectedId, onSelect }: {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const callbacksRef = useRef(onSelect);
+  const [basemap, setBasemap] = useState<BasemapMode>('streets');
+  const [tileError, setTileError] = useState(false);
   callbacksRef.current = onSelect;
+
+  const changeBasemap = (next: BasemapMode) => {
+    const map = mapRef.current;
+    if (!map || next === basemap) return;
+    setTileError(false);
+    map.setStyle(next === 'streets' ? STREET_STYLE : LICENSED_SATELLITE_STYLE || SATELLITE_STYLE);
+    setBasemap(next);
+  };
 
   useEffect(() => {
     if (!target.current) return;
     // OpenFreeMap is the default; configured private styles override it.
     // Public tile services can infer viewed regions from map tile requests.
-    const styleUrl = import.meta.env.VITE_GEO_MAP_STYLE_URL as string | undefined;
     const map = new maplibregl.Map({
       container: target.current,
-      style: styleUrl || 'https://tiles.openfreemap.org/styles/liberty',
+      style: STREET_STYLE,
       center: ANDAMOOKA_CENTER,
       zoom: 10,
       attributionControl: {}
     });
+    map.on('error', () => setTileError(true));
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     mapRef.current = map;
     return () => {
@@ -102,9 +129,24 @@ function FieldGeoMap({ pins, selectedId, onSelect }: {
   return (
     <div className="field-map-canvas-container">
       <div className="field-map-canvas" ref={target} role="application" aria-label="Private map of georeferenced field evidence" />
-      {!import.meta.env.VITE_GEO_MAP_STYLE_URL && (
-        <p className="field-map-map-notice">Street basemap · OpenFreeMap (third-party tile requests)</p>
-      )}
+      <div className="field-map-base-controls" role="group" aria-label="Select field map imagery">
+        <button type="button" className={basemap === 'streets' ? 'is-active' : ''}
+          onClick={() => changeBasemap('streets')} aria-pressed={basemap === 'streets'}>Street</button>
+        <button type="button" className={basemap === 'satellite' ? 'is-active' : ''}
+          onClick={() => changeBasemap('satellite')} aria-pressed={basemap === 'satellite'}
+          title="Loads imagery from an external tile provider; viewed map area is visible to the provider">Satellite</button>
+      </div>
+      <p className="field-map-map-notice">
+        {basemap === 'satellite'
+          ? LICENSED_SATELLITE_STYLE
+            ? 'Satellite imagery · Licensed APP map style'
+            : 'Satellite imagery · Esri preview. Check imagery licence before production.'
+          : 'Street map · OpenFreeMap'}
+        {' · Third-party tile requests reveal the viewed map area'}
+      </p>
+      {tileError && <p className="field-map-tile-error" role="status">
+        Some map tiles failed to load. GPS evidence markers remain available.
+      </p>}
     </div>
   );
 }
