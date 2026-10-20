@@ -39,11 +39,21 @@ create policy "geo_staff_read" on public.geographic_observations for select
 drop policy if exists "geo_staff_insert" on public.geographic_observations;
 create policy "geo_staff_insert" on public.geographic_observations for insert
   to authenticated with check (
-    (select public.is_staff()) and created_by = (select auth.uid())
-    and (sample_image_id is null or exists (
+    (select public.is_staff())
+    and created_by = (select auth.uid())
+    -- Only unverified camera-derived EXIF may be inserted from the browser.
+    -- Reported and certified geological origin must use a separate reviewed workflow.
+    and source_type = 'photo_exif'
+    and verification_status = 'unverified'
+    and sample_image_id is not null
+    and source_sha256 is not null
+    and exists (
       select 1 from public.sample_images si
-      where si.id=sample_image_id and si.sample_id=geographic_observations.sample_id
-    ))
+      where si.id = sample_image_id
+        and si.sample_id = geographic_observations.sample_id
+        and si.sha256 = geographic_observations.source_sha256
+        and si.is_original
+    )
   );
 -- EXIF backfill is idempotent via insert-if-missing at the application layer.
 comment on table public.geographic_observations is
