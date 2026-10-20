@@ -10,7 +10,6 @@ import { useApp } from '../../context/AppContext';
 import { Rail } from './Rail';
 import { HomeView } from '../views/HomeView';
 import { SamplesView } from '../views/SamplesView';
-import { FieldMapView } from '../views/FieldMapView';
 import { SampleDetailView } from '../views/SampleDetailView';
 import { XrfInboxView } from '../views/XrfInboxView';
 import { ReferenceDataView } from '../views/ReferenceDataView';
@@ -28,6 +27,7 @@ import { HistoricalImportModal } from '../modals/HistoricalImportModal';
 import type { CaptureKind } from '../../types';
 
 const SolariumPage = React.lazy(() => import('../../modules/solarium/SolariumPage'));
+const FieldMapView = React.lazy(() => import('../views/FieldMapView').then(m => ({ default: m.FieldMapView })));
 
 export const Shell: React.FC = () => {
   const {
@@ -55,7 +55,7 @@ export const Shell: React.FC = () => {
       case 'samples':
         return <SamplesView />;
       case 'field-map':
-        return <FieldMapView />;
+        return <React.Suspense fallback={<div className="loading" role="status">Loading private Field Map…</div>}><FieldMapView /></React.Suspense>;
       case 'sample':
         return <SampleDetailView />;
       case 'the-lab':
