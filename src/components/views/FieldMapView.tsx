@@ -56,7 +56,7 @@ function FieldGeoMap({ pins, selectedId, onSelect }: {
       style: styleUrl || EMPTY_MAP_STYLE,
       center: ANDAMOOKA_CENTER,
       zoom: 10,
-      attributionControl: Boolean(styleUrl)
+      attributionControl: styleUrl ? {} : false
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     mapRef.current = map;
