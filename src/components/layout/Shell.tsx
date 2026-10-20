@@ -10,6 +10,7 @@ import { useApp } from '../../context/AppContext';
 import { Rail } from './Rail';
 import { HomeView } from '../views/HomeView';
 import { SamplesView } from '../views/SamplesView';
+import { FieldMapView } from '../views/FieldMapView';
 import { SampleDetailView } from '../views/SampleDetailView';
 import { XrfInboxView } from '../views/XrfInboxView';
 import { ReferenceDataView } from '../views/ReferenceDataView';
@@ -53,6 +54,8 @@ export const Shell: React.FC = () => {
         return <HomeView />;
       case 'samples':
         return <SamplesView />;
+      case 'field-map':
+        return <FieldMapView />;
       case 'sample':
         return <SampleDetailView />;
       case 'the-lab':
