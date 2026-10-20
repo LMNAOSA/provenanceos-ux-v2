@@ -1,7 +1,7 @@
 /**
  * Private geographic evidence map.
  * All spatial marks come from EXIF or explicit observations. Text labels never become pins.
- * Basemap tiles are optional and should be served by an APP-approved private provider.
+ * Default street basemap uses OpenFreeMap; APP may supply its own private MapLibre style.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
@@ -29,11 +29,6 @@ interface Pin {
   preview: boolean;
 }
 const ANDAMOOKA_CENTER: [number, number] = [137.16, -30.45];
-const EMPTY_MAP_STYLE = {
-  version: 8 as const,
-  sources: {},
-  layers: []
-};
 
 function FieldGeoMap({ pins, selectedId, onSelect }: {
   pins: Pin[];
@@ -48,8 +43,8 @@ function FieldGeoMap({ pins, selectedId, onSelect }: {
 
   useEffect(() => {
     if (!target.current) return;
-    // No third-party basemap URL is hardcoded. Tile requests could reveal commercially
-    // sensitive field locations. Configure VITE_GEO_MAP_STYLE_URL only after provider approval.
+    // OpenFreeMap is the default; configured private styles override it.
+    // Public tile services can infer viewed regions from map tile requests.
     const styleUrl = import.meta.env.VITE_GEO_MAP_STYLE_URL as string | undefined;
     const map = new maplibregl.Map({
       container: target.current,
@@ -108,7 +103,7 @@ function FieldGeoMap({ pins, selectedId, onSelect }: {
     <div className="field-map-canvas-container">
       <div className="field-map-canvas" ref={target} role="application" aria-label="Private map of georeferenced field evidence" />
       {!import.meta.env.VITE_GEO_MAP_STYLE_URL && (
-        <p className="field-map-map-notice">Coordinate-only preview · Private basemap not configured</p>
+        <p className="field-map-map-notice">Street basemap · OpenFreeMap (third-party tile requests)</p>
       )}
     </div>
   );
