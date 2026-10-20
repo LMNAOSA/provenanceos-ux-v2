@@ -53,10 +53,10 @@ function FieldGeoMap({ pins, selectedId, onSelect }: {
     const styleUrl = import.meta.env.VITE_GEO_MAP_STYLE_URL as string | undefined;
     const map = new maplibregl.Map({
       container: target.current,
-      style: styleUrl || EMPTY_MAP_STYLE,
+      style: styleUrl || 'https://tiles.openfreemap.org/styles/liberty',
       center: ANDAMOOKA_CENTER,
       zoom: 10,
-      attributionControl: styleUrl ? {} : false
+      attributionControl: {}
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     mapRef.current = map;
