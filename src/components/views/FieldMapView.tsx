@@ -32,8 +32,7 @@ const ANDAMOOKA_CENTER: [number, number] = [137.16, -30.45];
 const EMPTY_MAP_STYLE = {
   version: 8 as const,
   sources: {},
-  layers: [],
-  background: undefined
+  layers: []
 };
 
 function FieldGeoMap({ pins, selectedId, onSelect }: {
