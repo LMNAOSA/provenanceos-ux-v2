@@ -11,6 +11,7 @@
  */
 
 import config from '../config';
+import { extractPhotoGeo, savePhotoGeoObservation } from './geographicEvidence';
 import { getSupabase, api } from './supabase';
 import { sha256, validateMedia, generateThumbnailBlob, resolveMediaMime } from './media';
 import type { CaptureKind, SpecimenImage } from '../types';
@@ -168,6 +169,24 @@ export async function uploadEvidenceShot(
       width_px: widthPx,
       height_px: heightPx
     });
+
+    // Optional geo indexing. A missing migration or unreadable EXIF never blocks
+    // authoritative photo registration. Extraction reads the exact uploaded file.
+    if (mime.startsWith('image/')) {
+      try {
+        const geo = await extractPhotoGeo(shot.file);
+        if (geo) {
+          await savePhotoGeoObservation({
+            id: imageRecord.id, sample_id: sampleId, file_name: shot.file.name,
+            storage_path: storagePath, thumb_path: thumbPath, content_type: mime,
+            size_bytes: shot.file.size, sha256: hash
+          }, geo, hash);
+        }
+      } catch {
+        // Geographic indexing is independent of immutable original evidence.
+        // Staff can retry the read-only backfill in Collection > Field Map.
+      }
+    }
 
     shot.state = 'saved';
     shot.savedMediaId = imageRecord.id;

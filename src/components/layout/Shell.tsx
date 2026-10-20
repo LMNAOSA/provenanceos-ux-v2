@@ -27,6 +27,7 @@ import { HistoricalImportModal } from '../modals/HistoricalImportModal';
 import type { CaptureKind } from '../../types';
 
 const SolariumPage = React.lazy(() => import('../../modules/solarium/SolariumPage'));
+const FieldMapView = React.lazy(() => import('../views/FieldMapView').then(m => ({ default: m.FieldMapView })));
 
 export const Shell: React.FC = () => {
   const {
@@ -53,6 +54,8 @@ export const Shell: React.FC = () => {
         return <HomeView />;
       case 'samples':
         return <SamplesView />;
+      case 'field-map':
+        return <React.Suspense fallback={<div className="loading" role="status">Loading private Field Map…</div>}><FieldMapView /></React.Suspense>;
       case 'sample':
         return <SampleDetailView />;
       case 'the-lab':
