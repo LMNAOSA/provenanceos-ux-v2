@@ -77,7 +77,7 @@ function optionalDate(value: unknown): string | null {
 /** Reads GPS stored in JPEG / HEIC / HEIF originals, including iPhone HEIF files. */
 export async function extractPhotoGeo(original: Blob): Promise<ExtractedPhotoGeo | null> {
   const tags: Record<string, unknown> | undefined = await exifr.parse(original, {
-    tiff: true, ifd0: true, exif: true, gps: true,
+    tiff: true, exif: true, gps: true,
     xmp: false, iptc: false, icc: false,
   });
   if (!tags) return null;
