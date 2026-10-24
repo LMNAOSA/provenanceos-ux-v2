@@ -7,7 +7,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './field-map.css';
-import { TopHeader } from '../layout/TopHeader';
 import { useApp } from '../../context/AppContext';
 import { signed } from '../../services/supabase';
 import {
@@ -46,8 +45,13 @@ const SATELLITE_STYLE = {
   layers: [{ id: 'satellite-imagery', type: 'raster' as const, source: 'world-imagery' }]
 };
 type BasemapMode = 'streets' | 'satellite';
+const sourceLabel = (source: GeographicSource) => ({
+  photo_exif: 'Photo GPS (camera)', device_gps: 'Device GPS',
+  reported_origin: 'Reported origin', verified_origin: 'Verified origin'
+})[source];
 
-function FieldGeoMap({ pins, selectedId, onSelect }: {
+function FieldGeoMap({ pins, selectedId, onSelect, expanded }: {
+  expanded: boolean;
   pins: Pin[];
   selectedId: string | null;
   onSelect: (key: string) => void;
@@ -56,7 +60,7 @@ function FieldGeoMap({ pins, selectedId, onSelect }: {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const callbacksRef = useRef(onSelect);
-  const [basemap, setBasemap] = useState<BasemapMode>('streets');
+  const [basemap, setBasemap] = useState<BasemapMode>('satellite');
   const [tileError, setTileError] = useState(false);
   callbacksRef.current = onSelect;
 
@@ -70,11 +74,11 @@ function FieldGeoMap({ pins, selectedId, onSelect }: {
 
   useEffect(() => {
     if (!target.current) return;
-    // OpenFreeMap is the default; configured private styles override it.
+    // Retain the configured imagery providers; satellite is the initial presentation.
     // Public tile services can infer viewed regions from map tile requests.
     const map = new maplibregl.Map({
       container: target.current,
-      style: STREET_STYLE,
+      style: LICENSED_SATELLITE_STYLE || SATELLITE_STYLE,
       center: ANDAMOOKA_CENTER,
       zoom: 10,
       attributionControl: {}
@@ -82,7 +86,11 @@ function FieldGeoMap({ pins, selectedId, onSelect }: {
     map.on('error', () => setTileError(true));
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     mapRef.current = map;
+    // The rail can collapse independently of the window size.
+    const resizeObserver = new ResizeObserver(() => map.resize());
+    resizeObserver.observe(target.current);
     return () => {
+      resizeObserver.disconnect();
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
       map.remove();
@@ -100,8 +108,15 @@ function FieldGeoMap({ pins, selectedId, onSelect }: {
       node.type = 'button';
       node.className = 'field-map-marker' + (pin.key === selectedId ? ' is-selected' : '') +
         (pin.preview ? ' is-preview' : '');
-      node.title = pin.sample_id + ' · ' + pin.source;
-      node.setAttribute('aria-label', 'View ' + pin.sample_id + ' coordinates');
+      node.dataset.observationKey = pin.key;
+      node.dataset.source = pin.source;
+      node.setAttribute('aria-pressed', String(pin.key === selectedId));
+      const dot = document.createElement('span');
+      dot.className = 'field-map-marker-dot';
+      dot.setAttribute('aria-hidden', 'true');
+      node.appendChild(dot);
+      node.title = pin.sample_id + ' · ' + sourceLabel(pin.source) + (pin.preview ? ' · Unsaved EXIF preview' : '');
+      node.setAttribute('aria-label', node.title + ' · View coordinates');
       node.addEventListener('click', e => {
         e.stopPropagation();
         callbacksRef.current(pin.key);
@@ -113,18 +128,30 @@ function FieldGeoMap({ pins, selectedId, onSelect }: {
     if (pins.length) {
       const bounds = new maplibregl.LngLatBounds();
       pins.forEach(p => bounds.extend([p.longitude, p.latitude]));
-      map.fitBounds(bounds, { padding: 56, maxZoom: 16, duration: 650 });
+      map.fitBounds(bounds, { padding: 56, maxZoom: 16, duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 650 });
     }
   }, [pins]);
 
   useEffect(() => {
     for (const marker of markersRef.current) {
-      const pin = pins.find(p => p.latitude === marker.getLngLat().lat && p.longitude === marker.getLngLat().lng);
-      marker.getElement().classList.toggle('is-selected', Boolean(pin && pin.key === selectedId));
+      // Coordinates may be shared by several photos; selection belongs to the observation.
+      const node = marker.getElement();
+      const active = node.dataset.observationKey === selectedId;
+      node.classList.toggle('is-selected', active);
+      node.setAttribute('aria-pressed', String(active));
     }
     const selected = pins.find(p => p.key === selectedId);
-    if (selected) mapRef.current?.easeTo({ center: [selected.longitude, selected.latitude], duration: 450 });
-  }, [pins, selectedId]);
+    if (!selected || !mapRef.current) return;
+    const map = mapRef.current;
+    const frame = map.getContainer().getBoundingClientRect();
+    const mobile = window.matchMedia('(max-width: 950px)').matches;
+    // Keep the selected beacon in the exposed map, above/beside the evidence panel.
+    const offset: [number, number] = mobile
+      ? [0, -(expanded ? Math.min(frame.height * .70, 560) : 100) / 2]
+      : [-Math.min(frame.width * .32, 360) / 2, 0];
+    map.easeTo({ center: [selected.longitude, selected.latitude], offset,
+      duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 450 });
+  }, [pins, selectedId, expanded]);
 
   return (
     <div className="field-map-canvas-container">
@@ -152,7 +179,7 @@ function FieldGeoMap({ pins, selectedId, onSelect }: {
 }
 
 export const FieldMapView: React.FC = () => {
-  const { navigate } = useApp();
+  const { navigate, toast } = useApp();
   const [observations, setObservations] = useState<GeoObservation[]>([]);
   const [migrationMissing, setMigrationMissing] = useState(false);
   const [photos, setPhotos] = useState<StoredPhoto[]>([]);
@@ -161,6 +188,24 @@ export const FieldMapView: React.FC = () => {
   const [scanning, setScanning] = useState(false);
   const stopRef = useRef(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // CONSOL PREMIUM FIELD MAP V1 — presentation state only. No changes to geographic evidence persistence.
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
+  const sheetToggleRef = useRef<HTMLButtonElement>(null);
+  const sheetGesture = useRef<{ y: number; x: number } | null>(null);
+  const suppressToggleClick = useRef(false);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const selectPin = (id: string) => { setSelectedId(id); setDetailsExpanded(true); };
+
+  useEffect(() => {
+    const page = pageRef.current;
+    const rail = document.querySelector('.pillar-rail');
+    if (!page || !rail) return;
+    const update = () => page.style.setProperty('--field-nav-height', `${rail.getBoundingClientRect().height}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(rail);
+    return () => observer.disconnect();
+  }, []);
   const [showOnlyGps, setShowOnlyGps] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
@@ -263,12 +308,115 @@ export const FieldMapView: React.FC = () => {
   }, {} as Record<string, number>);
 
   return (
-    <div className="field-map-page">
-      <TopHeader eyebrow="Collection / geographic evidence" title="Field Map"
-        sub="Private capture locations linked to original evidence. Camera GPS is not a verified extraction site."
-        action={<button type="button" className="secondary" onClick={() => navigate('#/samples')}>Specimen registry</button>}
-      />
-      <section className="field-map-toolbar" aria-label="Geographic evidence actions">
+    <div className="field-map-page" ref={pageRef}>
+      <div className="field-map-grid" data-design="premium-field-v1">
+        <div className="field-map-ambient-top" aria-hidden="true" />
+        <button type="button" className="field-map-back-btn"
+          onClick={() => navigate('#/samples')} aria-label="Back to specimen registry">←</button>
+        <div className="field-map-hero-brand">
+          <span>CONSOL / COLLECTION</span>
+          <h1>Field Map</h1>
+          <small>{pins.length} evidence {pins.length === 1 ? 'location' : 'locations'}</small>
+        </div>
+        <button type="button" className="field-map-tools-link" onClick={() => {
+          const tools = document.getElementById('field-map-tools');
+          tools?.scrollIntoView({ block: 'start' }); tools?.focus({ preventScroll: true });
+        }}>EXIF audit &amp; import</button>
+        <section className="field-map-surface" aria-label="Evidence coordinates map">
+          <FieldGeoMap pins={pins} selectedId={selectedId} expanded={detailsExpanded} onSelect={selectPin} />
+          {pins.length === 0 && <div className="field-map-empty-map">No coordinate observations to display. Run a read-only EXIF audit to preview recoverable locations.</div>}
+        </section>
+        <aside className={'field-map-panel' + (detailsExpanded ? ' is-expanded' : '')}
+          aria-label="Map location details" onKeyDown={event => {
+            if (event.key === 'Escape') { setDetailsExpanded(false); sheetToggleRef.current?.focus(); }
+          }}>
+          <div className="field-map-sheet-handle" aria-hidden="true" />
+          <button className="field-map-sheet-toggle" type="button" ref={sheetToggleRef}
+            aria-controls="field-map-sheet-body"
+            onPointerDown={event => {
+              if (!event.isPrimary || event.button !== 0) return;
+              sheetGesture.current = { y: event.clientY, x: event.clientX };
+              suppressToggleClick.current = false;
+              event.currentTarget.setPointerCapture(event.pointerId);
+            }}
+            onPointerUp={event => {
+              const start = sheetGesture.current;
+              sheetGesture.current = null;
+              if (!start) return;
+              const dy = event.clientY - start.y;
+              if (Math.abs(dy) > 32 && Math.abs(dy) > Math.abs(event.clientX - start.x)) {
+                setDetailsExpanded(dy < 0);
+                suppressToggleClick.current = true;
+              }
+            }}
+            onPointerCancel={() => { sheetGesture.current = null; }}
+            aria-expanded={detailsExpanded}
+            aria-label={detailsExpanded ? 'Collapse location details' : 'Expand location details'}
+            onClick={() => {
+              if (suppressToggleClick.current) { suppressToggleClick.current = false; return; }
+              setDetailsExpanded(expanded => !expanded);
+            }}>
+            {selected && previewUrl && <img src={previewUrl} alt="" />}
+            <span className="field-map-sheet-caption">
+              <strong>{selected ? selected.sample_id : 'Field observations'}</strong>
+              <small>{selected
+                ? sourceLabel(selected.source) + (selected.preview ? ' · Unsaved preview' : '')
+                : pins.length + ' mapped evidence locations'}</small>
+            </span>
+            <span className="field-map-sheet-toggle-icon" aria-hidden="true">{detailsExpanded ? '−' : '+'}</span>
+          </button>
+          <div id="field-map-sheet-body" className="field-map-sheet-body" hidden={!detailsExpanded}>
+          {selected ? (
+            <div className="field-map-detail">
+              <span className="eyebrow">{selected.preview ? 'EXIF PREVIEW · NOT IMPORTED' : 'RECORDED EVIDENCE'}</span>
+              {previewUrl && <img className="field-map-photo" src={previewUrl} alt={'Original evidence preview for ' + selected.sample_id} />}
+              <h2>{selected.sample_id}</h2>
+              <p className="field-map-provenance-note">Camera GPS records the photograph’s capture location, not a verified geological extraction origin.</p>
+              <dl>
+                <dt>Coordinates</dt><dd>{selected.latitude.toFixed(8)}, {selected.longitude.toFixed(8)}</dd>
+                <dt>Evidence source</dt><dd>{sourceLabel(selected.source)}</dd>
+                <dt>GPS error estimate</dt><dd>{selected.accuracy_m == null ? 'Not recorded' : selected.accuracy_m.toFixed(2) + ' m'}</dd>
+                <dt>Camera timestamp</dt><dd>{selected.captured_at || 'Not recorded'}</dd>
+              </dl>
+
+            </div>
+          ) : (
+            <div className="field-map-detail">
+              <span className="eyebrow">Spatial evidence</span>
+              <h2>Field observations</h2>
+              <p>Select a pin or specimen below. Preview pins are not saved to the database.</p>
+              <p>Only explicitly recorded coordinates are mapped. The registry's default location name is never used to invent a GPS position.</p>
+            </div>
+          )}
+          <div className="field-map-list-header">
+            <strong>Locations</strong>
+            <label><input type="checkbox" checked={showOnlyGps} onChange={e => setShowOnlyGps(e.target.checked)} /> Photo GPS only</label>
+          </div>
+          <div className="field-map-list">
+            {pins.filter(p => !showOnlyGps || p.source === 'photo_exif').map(p =>
+              <button type="button" key={p.key} className={'field-map-list-item' + (selectedId === p.key ? ' active' : '')}
+                aria-pressed={selectedId === p.key} onClick={() => selectPin(p.key)}>
+                <strong>{p.sample_id}</strong><span>{sourceLabel(p.source)}{p.preview ? ' · Preview' : ''}</span>
+                <small>{p.latitude.toFixed(6)}, {p.longitude.toFixed(6)}</small>
+              </button>
+            )}
+            {!pins.length && <p className="field-map-list-empty">No coordinates to display.</p>}
+          </div>
+          </div>
+          {selected && detailsExpanded && (
+              <div className="field-map-detail-actions">
+                <button className="primary" onClick={() => navigate('#/samples/' + encodeURIComponent(selected.sample_id))}>View specimen</button>
+                <button className="secondary" onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(selected.latitude.toFixed(8) + ', ' + selected.longitude.toFixed(8));
+                    toast('Coordinates copied');
+                  } catch { toast('Could not copy coordinates. Select the coordinates above to copy them.', 'error'); }
+                }}>Copy coordinates</button>
+              </div>
+          )}
+        </aside>
+      </div>
+      <section id="field-map-tools" tabIndex={-1} className="field-map-toolbar" aria-label="Geographic evidence actions">
         <div className="field-map-stats">
           <span><strong>{photos.length}</strong> original photographs</span>
           <span><strong>{observations.length}</strong> recorded observations</span>
@@ -294,53 +442,6 @@ export const FieldMapView: React.FC = () => {
       </div>}
       {notice && <div className="field-map-banner" role="status">{notice}</div>}
       {error && <div className="field-map-error" role="alert">{error}</div>}
-      <div className="field-map-grid">
-        <section className="field-map-surface" aria-label="Evidence coordinates map">
-          <FieldGeoMap pins={pins} selectedId={selectedId} onSelect={setSelectedId} />
-          {pins.length === 0 && <div className="field-map-empty-map">No verified coordinate observations yet. Run a read-only EXIF audit to preview recoverable locations.</div>}
-        </section>
-        <aside className="field-map-panel" aria-label="Map location details">
-          {selected ? (
-            <div className="field-map-detail">
-              <span className="eyebrow">{selected.preview ? 'EXIF PREVIEW · NOT IMPORTED' : 'RECORDED EVIDENCE'}</span>
-              <h2>{selected.sample_id}</h2>
-              {previewUrl && <img className="field-map-photo" src={previewUrl} alt={'Original evidence preview for ' + selected.sample_id} />}
-              <dl>
-                <dt>Latitude</dt><dd>{selected.latitude.toFixed(8)}</dd>
-                <dt>Longitude</dt><dd>{selected.longitude.toFixed(8)}</dd>
-                <dt>Evidence source</dt><dd>{selected.source.replaceAll('_',' ')}</dd>
-                <dt>GPS error estimate</dt><dd>{selected.accuracy_m == null ? 'Not recorded' : selected.accuracy_m.toFixed(2) + ' m'}</dd>
-                <dt>Camera timestamp</dt><dd>{selected.captured_at || 'Not recorded'}</dd>
-              </dl>
-              <div className="field-map-detail-actions">
-                <button className="primary" onClick={() => navigate('#/samples/' + encodeURIComponent(selected.sample_id))}>Open specimen</button>
-                <button className="secondary" onClick={() => navigator.clipboard?.writeText(selected.latitude.toFixed(8) + ', ' + selected.longitude.toFixed(8))}>Copy coordinates</button>
-              </div>
-            </div>
-          ) : (
-            <div className="field-map-detail">
-              <span className="eyebrow">Spatial evidence</span>
-              <h2>Field observations</h2>
-              <p>Select a pin or specimen below. Preview pins are not saved to the database.</p>
-              <p>Only explicitly recorded coordinates are mapped. The registry's default location name is never used to invent a GPS position.</p>
-            </div>
-          )}
-          <div className="field-map-list-header">
-            <strong>Locations</strong>
-            <label><input type="checkbox" checked={showOnlyGps} onChange={e => setShowOnlyGps(e.target.checked)} /> Photo GPS only</label>
-          </div>
-          <div className="field-map-list">
-            {pins.filter(p => !showOnlyGps || p.source === 'photo_exif').map(p =>
-              <button type="button" key={p.key} className={'field-map-list-item' + (selectedId === p.key ? ' active' : '')}
-                onClick={() => setSelectedId(p.key)}>
-                <strong>{p.sample_id}</strong><span>{p.source.replaceAll('_',' ')}{p.preview ? ' · Preview' : ''}</span>
-                <small>{p.latitude.toFixed(6)}, {p.longitude.toFixed(6)}</small>
-              </button>
-            )}
-            {!pins.length && <p className="field-map-list-empty">No coordinates to display.</p>}
-          </div>
-        </aside>
-      </div>
       {rows.length > 0 && <section className="field-map-audit">
         <h2>Original-file audit</h2>
         <p>Read-only assessment. A matching SHA-256 is required before GPS is accepted; missing data is never guessed.</p>
